@@ -16,9 +16,9 @@ train = DataFrame(x=train[:, 1:-2], y=train[:, :1], ratio_weight=True)
 val = DataFrame(x=val[:, 1:-2], y=val[:, :1])
 
 outsize = 1
-N_EPOCHS = 50
+N_EPOCHS = 500
 print(train.nfeatures)
 cl = OneHotMLP(train.nfeatures,
-                [100,150,100,50], outsize, path + 'nn_models/4x100_wratio')
+                [250,250], outsize, path + 'nn_models/2x250_oneHot')
 cl.train(train, val, epochs=N_EPOCHS, keep_prob=0.9, batch_size=256,beta=1e-4,
         out_size=outsize)

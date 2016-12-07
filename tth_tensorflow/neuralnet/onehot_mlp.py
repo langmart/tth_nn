@@ -91,11 +91,7 @@ class OneHotMLP:
                 biases.append(tf.Variable(tf.zeros([h_layers[i]]), name =
                     'B_{}'.format(i+1)))
 
-<<<<<<< HEAD
         # print('self.out_size: {}'.format(self.out_size))
-=======
-        print('self.out_size: {}'.format(self.out_size))
->>>>>>> b2c81209ee00c710b609cd543b0f9d04085ff2c7
         # connect the last hidden layer to the output layer
         weights.append(tf.Variable(tf.random_normal([h_layers[-1], self.out_size],
             stddev = tf.sqrt(2.0/h_layers[-1])), name = 'W_out'))
@@ -123,18 +119,13 @@ class OneHotMLP:
 
         layer = tf.nn.dropout(tf.nn.relu(tf.matmul(data, W[0]) + B[0]),
                 keep_prob)
-<<<<<<< HEAD
         # print('shape of layer: {}'.format(layer.get_shape()))
-=======
-        print('shape of layer: {}'.format(layer.get_shape()))
->>>>>>> b2c81209ee00c710b609cd543b0f9d04085ff2c7
         # if more the 1 hidden layer -> generate output via multiple weight
         # matrices 
         if len(self.h_layers) > 1:
             for weight, bias in zip(W[1:-1], B[1:-1]):
                 layer = tf.nn.dropout(tf.nn.relu(tf.matmul(layer, weight) +
                     bias), keep_prob)
-<<<<<<< HEAD
                 # print('shape of layer: {}'.format(layer.get_shape()))
 
         # print('shape of W[-1]: {}'.format(W[-1].get_shape()))
@@ -144,18 +135,6 @@ class OneHotMLP:
         # TODO: return something proper
         # return out
         return tf.nn.sigmoid(out)
-=======
-                print('shape of layer: {}'.format(layer.get_shape()))
-
-        print('shape of W[-1]: {}'.format(W[-1].get_shape()))
-        out = tf.matmul(layer, W[-1]) + B[-1]
-        print('shape of out: {}'.format(out.get_shape()))
-        # print('shape of W[-1]: {}'.format(W[-1].get_shape()))
-        # TODO: return something proper
-        return out
-        # return tf.nn.sigmoid(out)
-
->>>>>>> b2c81209ee00c710b609cd543b0f9d04085ff2c7
 
 
     def train(self, train_data, val_data, epochs = 10, batch_size = 100,
@@ -184,15 +163,9 @@ class OneHotMLP:
         with train_graph.as_default():
             x = tf.placeholder(tf.float32, [None, self.n_features])
             # print('shape of x: {}'.format(x.get_shape()))
-<<<<<<< HEAD
             y = tf.placeholder(tf.float32, [None, out_size])
             # print('shape of y: {}'.format(y.get_shape()))
             w = tf.placeholder(tf.float32, [None, out_size])
-=======
-            y = tf.placeholder(tf.float32, [None, 10])
-            # print('shape of y: {}'.format(y.get_shape()))
-            w = tf.placeholder(tf.float32, [None, 10])
->>>>>>> b2c81209ee00c710b609cd543b0f9d04085ff2c7
 
             weights, biases = self._get_parameters()
 
@@ -235,15 +208,9 @@ class OneHotMLP:
                 for _ in range(total_batches):
                     # train in batches
                     train_x, train_y, train_w=train_data.next_batch(batch_size)
-<<<<<<< HEAD
                     # print('shape of train_x: {}'.format(train_x.shape))
                     # print('shape of train_y: {}'.format(train_y.shape))
                     # print('shape of train_w: {}'.format(train_w.shape))
-=======
-                    print('shape of train_x: {}'.format(train_x.shape))
-                    print('shape of train_y: {}'.format(train_y.shape))
-                    print('shape of train_w: {}'.format(train_w.shape))
->>>>>>> b2c81209ee00c710b609cd543b0f9d04085ff2c7
 
                     _, train_loss = sess.run([train_step, loss], {x:train_x,
                         y:train_y, w:train_w})
