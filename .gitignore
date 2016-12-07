@@ -1,0 +1,13 @@
+__pycache__
+branchlists
+graph/
+data/
+*.pyc
+*.log
+*.npy
+*.pdf
+*.png
+*.eps
+*.ckpt
+*.ckpt.meta
+test*
