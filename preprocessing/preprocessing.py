@@ -2,31 +2,31 @@ from __future__ import absolute_import, division, print_function
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from root_numpy import root2array
+# from root_numpy import root2array
 
 
-def convert_root_to_array(save_path, name, files, treename=None, branches=None):
-    """Convert trees in ROOT files into a numpy structured array.
-
-    Arguments
-    ---------
-    save_path (str):
-    Path to the directory the array will be saved in.
-    files (str or list(str)):
-    The name of the files that will be converted into one structured array.
-    treename (str, optional (default=None)):
-    Name of the tree to convert.
-    branches (str or list(str), optional (default=None)):
-    List of branch names to include as collumns of the array. If None all
-    branches will be included.    
-    """
-    arr = root2array(files, treename, branches)
-
-    if not os.path.isdir(save_path):
-        os.makedirs(save_path)
-
-    np_file = save_path + '/' + name
-    np.save(npfile, arr)
+# def convert_root_to_array(save_path, name, files, treename=None, branches=None):
+#     """Convert trees in ROOT files into a numpy structured array.
+# 
+#     Arguments
+#     ---------
+#     save_path (str):
+#     Path to the directory the array will be saved in.
+#     files (str or list(str)):
+#     The name of the files that will be converted into one structured array.
+#     treename (str, optional (default=None)):
+#     Name of the tree to convert.
+#     branches (str or list(str), optional (default=None)):
+#     List of branch names to include as collumns of the array. If None all
+#     branches will be included.    
+#     """
+#     arr = root2array(files, treename, branches)
+# 
+#     if not os.path.isdir(save_path):
+#         os.makedirs(save_path)
+# 
+#     np_file = save_path + '/' + name
+#     np.save(npfile, arr)
 
 
 class GetBranches:
@@ -67,11 +67,11 @@ class GetBranches:
             print('created directory {}'.format(self.save_path))
         
         print('loading: {}, '.format(signal_path), end='')
-        structured_sig = np.load(signal_path)
+        structured_sig = np.load(signal_path, encoding='latin1')
         print('done.')
         
         print('loading: {}, '.format(background_path), end='')
-        structured_bg = np.load(background_path)
+        structured_bg = np.load(background_path, encoding='latin1')
         print('done.')
 
         print('get branches, ', end="")
@@ -83,9 +83,9 @@ class GetBranches:
         if sig_branches == bg_branches:
             self.branches = sig_branches
 
-        print('do controll plots, ', end='')
-        self._controll_plot(sig_data, bg_data, self.branches)
-        print('done.')
+        # print('do controll plots, ', end='')
+        # self._controll_plot(sig_data, bg_data, self.branches)
+        # print('done.')
         
         sig = {'data': sig_data}
         bg = {'data': bg_data}
@@ -142,15 +142,15 @@ class GetBranches:
         new_branches = []
         
         for branch in branches:
-            if branch in jets:
-                # only keep the firt four entries of the jet vector
-                array = [jet[:4] for jet in structured_array[branch]]
-                ndarray.append(np.vstack(array))
-                new_branches += [branch+'_{}'.format(i) for i in range(1,5)]
-            else:
-                array = structured_array[branch].reshape(-1,1)
-                ndarray.append(array)
-                new_branches += [branch]
+            # if branch in jets:
+            #     # only keep the firt four entries of the jet vector
+            #     array = [jet[:4] for jet in structured_array[branch]]
+            #     ndarray.append(np.vstack(array))
+            #     new_branches += [branch+'_{}'.format(i) for i in range(1,5)]
+            # else:
+            array = structured_array[branch].reshape(-1,1)
+            ndarray.append(array)
+            new_branches += [branch]
         
         return np.hstack(ndarray), new_branches
 
