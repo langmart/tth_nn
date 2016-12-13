@@ -22,4 +22,3 @@ print('Calculated dimension of output vector: {}'.format(out_size))
 get_branches = GetBranches('./data', branchlist, categorylist, out_size)
 get_branches.process(ttH_Even, ttbarSL_Even, 'even1')
 get_branches.process(ttH_Odd, ttbarSL_Odd, 'odd1')
-
