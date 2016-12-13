@@ -5,17 +5,17 @@ from tth_tensorflow.neuralnet.data_frame import DataFrame
 
 
 
-path = 'data/bdt/63_wo_weights/'
+path = 'data/converted/'
 
-train = np.load(path + 'train.npy')
-val = np.load(path + 'val.npy')
+train = np.load(path + 'even1.npy')
+val = np.load(path + 'odd1.npy')
 print(train.shape, val.shape)
 # test = np.load(path + 'test.npy')
 
 train = DataFrame(x=train[:, 1:-2], y=train[:, :1], ratio_weight=True)
 val = DataFrame(x=val[:, 1:-2], y=val[:, :1])
 
-outsize = 1
+outsize = 6
 N_EPOCHS = 500
 print(train.nfeatures)
 cl = OneHotMLP(train.nfeatures,

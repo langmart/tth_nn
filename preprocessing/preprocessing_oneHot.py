@@ -83,11 +83,11 @@ class GetBranches:
             print("Created directory {}.".format(self.save_path))
 
         print('Loading: {} '.format(signal_path), end='')
-        structured_sig = np.load(signal_path, encoding='bytes')
+        structured_sig = np.load(signal_path, encoding='latin1')
         print('done.')
 
         print('Loading: {} '.format(background_path), end='')
-        structured_bg = np.load(background_path, encoding='bytes')
+        structured_bg = np.load(background_path, encoding='latin1')
         print('done.')
 
         print('Getting branches, ', end='')
@@ -118,8 +118,7 @@ class GetBranches:
         n_bg_events = bg['data'].shape[0]
 
         print('Getting labels, ', end='')
-        sig['labels'] = self._get_labels(sig, structured_sig, n_sig_events,
-        'sig')
+        sig['labels'] = self._get_labels(sig, structured_sig, n_sig_events,'sig')
         bg['labels'] = self._get_labels(bg, structured_bg, n_bg_events, 'bg')
         print('done.')
 
@@ -130,10 +129,10 @@ class GetBranches:
         print('done.')
 
         
-        print('Getting labels, ', end='')
-        sig['labels'] = self._get_labels(n_sig_events, 'sig')
-        bg['labels'] = self._get_labels(n_bg_events, 'bg')
-        print('done.')
+        #  print('Getting labels, ', end='')
+        #  sig['labels'] = self._get_labels(n_sig_events, 'sig')
+        #  bg['labels'] = self._get_labels(n_bg_events, 'bg')
+        #  print('done.')
         
         self._save_array(sig,bg)
 
@@ -171,15 +170,15 @@ class GetBranches:
         new_branches = []
 
         for branch in branches:
-            if branch in jets:
-                # only keep the first four entries of the jet vector
-                array = [jet[:4] for jet in structured_array[branch]]
-                ndarray.append(np.vstack(array))
-                new_branches += [branch+'_{}'.format(i) for i in range(1,5)]
-            else:
-                array = structured_array[branch].reshape(-1,1)
-                ndarray.append(array)
-                new_branches += [branch]
+            # if branch in jets:
+            #     # only keep the first four entries of the jet vector
+            #     array = [jet[:4] for jet in structured_array[branch]]
+            #     ndarray.append(np.vstack(array))
+            #     new_branches += [branch+'_{}'.format(i) for i in range(1,5)]
+            # else:
+            array = structured_array[branch].reshape(-1,1)
+            ndarray.append(array)
+            new_branches += [branch]
         return np.hstack(ndarray), new_branches
 
 
@@ -282,7 +281,9 @@ class GetBranches:
                     continue
 
         # keep_dict = {'data': data_dict['data'][keep_events], 'weights': data_dict['weights'][keep_events]}
-        keep_dict = {'data': data_dict['data'][keep_events], 'weights': data_dict['weights'][keep_events], 'labels': data_dict['labels'][keep_events]}
+        keep_dict = {'data': [data_dict['data'][i] for i in keep_events],
+                'weights': [data_dict['weights'][i] for i in keep_events],
+                'labels': [data_dict['labels'][i] for i in keep_events]}
 
         return keep_dict
 
