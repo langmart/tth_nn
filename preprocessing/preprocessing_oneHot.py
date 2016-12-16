@@ -276,12 +276,12 @@ class GetBranches:
 
         array_dir = self.save_path + '/' + self.arr_name + '.npy'
         
-        print('Shape of sig[labels]: {}'.format(sig['labels'][1].shape))
-        print('Shape of sig[data]: {}'.format(sig['data'][1].shape))
-        print('Shape of sig[weights]: {}'.format(sig['weights'][1].shape))
-        print('Shape of bg[labels]: {}'.format(bg['labels'][1].shape))
-        print('Shape of bg[data]: {}'.format(bg['data'][1].shape))
-        print('Shape of bg[weights]: {}'.format(bg['weights'][1].shape))
+        # print('Shape of sig[labels]: {}'.format(sig['labels'][1].shape))
+        # print('Shape of sig[data]: {}'.format(sig['data'][1].shape))
+        # print('Shape of sig[weights]: {}'.format(sig['weights'][1].shape))
+        # print('Shape of bg[labels]: {}'.format(bg['labels'][1].shape))
+        # print('Shape of bg[data]: {}'.format(bg['data'][1].shape))
+        # print('Shape of bg[weights]: {}'.format(bg['weights'][1].shape))
 
         print('Saving array to {}, '.format(array_dir), end='')
         
