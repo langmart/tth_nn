@@ -11,7 +11,7 @@ import sys
 import time
 
 from sklearn.metrics import roc_auc_score, roc_curve
-from .draw_nn import PlotNN
+from draw_nn import PlotNN
 
 class BinaryMLP:
     """A Binary Classifier using a Multilayerperceptron.
