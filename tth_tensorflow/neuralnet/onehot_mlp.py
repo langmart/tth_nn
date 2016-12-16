@@ -171,7 +171,7 @@ class OneHotMLP:
 
             # prediction
             y_ = self._model(x, weights, biases, keep_prob)
-            print('shape of y_: {}'.format(y_.get_shape()))
+            # print('shape of y_: {}'.format(y_.get_shape()))
             yy_ = self._model(x, weights, biases)
 
             # loss function
@@ -212,8 +212,7 @@ class OneHotMLP:
                     # print('shape of train_y: {}'.format(train_y.shape))
                     # print('shape of train_w: {}'.format(train_w.shape))
 
-                    _, train_loss = sess.run([train_step, loss], {x:train_x,
-                        y:train_y, w:train_w})
+                    _, train_loss = sess.run([train_step, loss], {x:train_x, y:train_y, w:train_w})
                     epoch_loss += train_loss
                 train_losses.append(np.mean(epoch_loss))
 
