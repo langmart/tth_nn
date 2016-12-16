@@ -209,14 +209,33 @@ class OneHotMLP:
                     # print('shape of train_x: {}'.format(train_x.shape))
                     # print('shape of train_y: {}'.format(train_y.shape))
                     # print('shape of train_w: {}'.format(train_w.shape))
-                    # train_x = np.transpose(train_x)
-                    # train_y = np.transpose(train_y)
-                    # train_w = np.transpose(train_w)
+                    train_x = np.transpose(train_x)
+                    train_y = np.transpose(train_y)
+                    train_w = np.transpose(train_w)
                     # print('shape of train_x: {}'.format(train_x.shape))
                     # print('shape of train_y: {}'.format(train_y.shape))
                     # print('shape of train_w: {}'.format(train_w.shape))
-        
+                
                     # train_dict = {x:train_x, y:train_y, w:train_w}
+                    # _, train_loss = sess.run([train_step, loss], train_dict)
+                    
+                    
+                    # train_dict = {}
+                    # 
+                    # for i in range(batch_size):
+                    #     if ('x' in train_dict):
+                    #         train_dict['x'].append(train_x[:,i])
+                    #     else:
+                    #         train_dict['x'] = train_x[:,i]
+                    #     if ('y' in train_dict):
+                    #         train_dict['y'].append(train_y[:,i])
+                    #     else:
+                    #         train_dict['y'] = train_y[:,i]
+                    #     if ('w' in train_dict):
+                    #         train_dict['w'].append(train_w[:,i])
+                    #     else:
+                    #         train_dict['w'] = train_w[:,i]
+                    # 
                     # _, train_loss = sess.run([train_step, loss], train_dict)
                     _, train_loss = sess.run([train_step, loss], {x:train_x, y:train_y, w:train_w})
                     epoch_loss += train_loss
