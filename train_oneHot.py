@@ -1,6 +1,6 @@
 # written by Martin Lang.
 import numpy as np
-from tth_tensorflow.neuralnet.onehot_mlp import OneHotMLP
+from onehot_mlp import OneHotMLP
 from data_frame_oneHot import DataFrame
 # from onehot_mlp import OneHotMLP
 # from data_frame import DataFrame
