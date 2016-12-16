@@ -13,8 +13,9 @@ class DataFrame:
             Dimension of the output (i.e. label).
         """
 
-        self.y = array[:, :out_size]
-        self.x = array[:, out_size:-1]
+        self.out_size = out_size
+        self.y = array[:, :self.out_size]
+        self.x = array[:, self.out_size:-1]
         self.w = array[:, -1:]
 
         self.n = self.x.shape[0]
@@ -36,6 +37,14 @@ class DataFrame:
         self.y = self.y[perm]
         self.w = self.w[perm]
 
+        for i in range(self.n):
+            if (self.x[i].shape[0] != self.nfeatures):
+                print('Some data does not have the right shape.')
+            if (self.y[i].shape[0] != self.out_size):
+                print('Some labels do not have the right shape.')
+            if (self.w[i].shape[0] != 1):
+                print('Some weights do not have the right shape.')
+
         self.next_id = 0
 
     def next_batch(self, batch_size):
@@ -53,6 +62,7 @@ class DataFrame:
         cur_id = self.next_id
         self.next_id += batch_size
 
-        return (self.x[cur_id:cur_id + batch_size], self.y[cur_id:cur_id +
-            batch_size], self.w[cur_id:cur_id + batch_size])
+        return (np.array(self.x[cur_id:cur_id + batch_size]),
+                np.array(self.y[cur_id:cur_id + batch_size]),
+                np.array(self.w[cur_id:cur_id + batch_size]))
 
