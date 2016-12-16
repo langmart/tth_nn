@@ -1,8 +1,9 @@
 # written by Max Welsch.
 import numpy as np
-from tth_tensorflow.neuralnet.binary_mlp import BinaryMLP
-from tth_tensorflow.neuralnet.data_frame import DataFrame
-
+# from tth_tensorflow.neuralnet.binary_mlp import BinaryMLP
+# from tth_tensorflow.neuralnet.data_frame import DataFrame
+from binary_mlp import BinaryMLP
+from data_frame import DataFrame
 
 
 path = 'all_branches/63/'
