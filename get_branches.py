@@ -1,4 +1,4 @@
-from preprocessing.preprocessing_testing_oneHot import GetBranches
+from preprocessing.preprocessing_oneHot import GetBranches
 
 loaddir = '/storage/7/lang/ntuples/numpy/'
 
