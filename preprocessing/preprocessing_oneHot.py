@@ -5,29 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 #from root_numpy import root2array
 
-# def conv_root2array(save_path, name, files, treename=None, branches=None):
-#     """Convert ROOT trees into numpy structured array.
-# 
-#     Arguments:
-#     ----------------
-#     save_path (str):
-#         Path to the directory the array will be saved in.
-#     files (str or list(str)):
-#         The name of the files that will be converted into ONE structured array.
-#     treename (str, optional (default=None)):
-#         Name of the tree to convert.
-#     branches (str of list(str), optional(default = None)):
-#         List of branch names to include as columns of the array. If None all
-#         branches will be included.
-#     """
-# 
-#     arr = root2array(files, treename, branches)
-# 
-#     if not os.path.isdir(save_path):
-#         os.makedirs(save_path)
-# 
-#     np_file = save_path + '/' + name
-#     np.save(npfile, arr)
 
 class GetBranches:
     """Keeps only events of a certain category from numpy structured arrays.
@@ -117,24 +94,16 @@ class GetBranches:
         n_sig_events = sig['data'].shape[0]
         n_bg_events = bg['data'].shape[0]
 
-        print('Getting labels, ', end='')
-        sig['labels'] = self._get_labels(sig, structured_sig, n_sig_events,'sig')
-        bg['labels'] = self._get_labels(bg, structured_bg, n_bg_events, 'bg')
+        print('Found categories: {}.'.format(self.categories))
+
+        print('Getting categories and labels, ')
+        sign = self._get_categories_and_labels(sig, structured_sig,
+                n_sig_events, 'sig')
+        bgn = self._get_categories_and_labels(bg, structured_bg, n_bg_events,
+        'bg')
         print('done.')
 
-        print('Getting categories: {} , '.format(self.categories), end='')
-        # signal should not be categorized
-        # sig = self._get_category(sig, structured_sig)
-        bg = self._get_category(bg, structured_bg)
-        print('done.')
-
-        
-        #  print('Getting labels, ', end='')
-        #  sig['labels'] = self._get_labels(n_sig_events, 'sig')
-        #  bg['labels'] = self._get_labels(n_bg_events, 'bg')
-        #  print('done.')
-        
-        self._save_array(sig,bg)
+        self._save_array(sign,bgn)
 
 
     def _get_branches(self, structured_array, branches):
@@ -181,83 +150,10 @@ class GetBranches:
             new_branches += [branch]
         return np.hstack(ndarray), new_branches
 
-
-    def _get_labels(self, data_dict, structured_array, n_events, label):
-        """Create labels.
-
-        Arguments:
-        ----------------
-        n_events (int):
-            Number of labels to be created.
-        label (str):
-            String indicating whether the events belong to the signal or to the
-            background.
-
-        Returns:
-        ----------------
-        labels (numpy ndarray):
-            A numpy ndarray of shape (n_events, out_size) filled with the label.
-        """
-
-        labels = []
-        if (label=='sig'):
-            for i in range(n_events):
-                labels.append([1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-            print('Created {} signal labels.'.format(len(labels)))
-            print('Number of signal events without a label: {}'.format(n_events
-                - len(labels)))
-        else:
-            for event in range(structured_array.shape[0]):
-                # TTPlusBB = arr[event]['GenEvt_I_TTPlusBB']
-                # TTPlusCC = arr[event]['GenEvt_I_TTPlusCC']
-                if (structured_array[event]['GenEvt_I_TTPlusBB'] == 3 and
-                        structured_array[event]['GenEvt_I_TTPlusCC'] == 0):
-                    labels.append([0.0, 1.0, 0.0, 0.0, 0.0, 0.0])
-                if (structured_array[event]['GenEvt_I_TTPlusBB'] == 2 and
-                        structured_array[event]['GenEvt_I_TTPlusCC'] == 0):
-                    labels.append([0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
-                if (structured_array[event]['GenEvt_I_TTPlusBB'] == 1 and
-                        structured_array[event]['GenEvt_I_TTPlusCC'] == 0):
-                    labels.append([0.0, 0.0, 0.0, 1.0, 0.0, 0.0])
-                if (structured_array[event]['GenEvt_I_TTPlusBB'] == 0 and
-                        structured_array[event]['GenEvt_I_TTPlusCC'] == 1):
-                    labels.append([0.0, 0.0, 0.0, 0.0, 1.0, 0.0])
-                if (structured_array[event]['GenEvt_I_TTPlusBB'] == 0 and
-                        structured_array[event]['GenEvt_I_TTPlusCC'] == 0):
-                    labels.append([0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
-                else:
-                    labels.append([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-            n30 = 0
-            n20 = 0
-            n10 = 0
-            n01 = 0
-            nlight = 0
-            for event in range(n_events):
-                if (labels[event][1] == 1.0):
-                    n30 += 1
-                if (labels[event][2] == 1.0):
-                    n20 += 1
-                if (labels[event][3] == 1.0):
-                    n10 += 1
-                if (labels[event][4] == 1.0):
-                    n01 += 1
-                if (labels[event][5] == 1.0):
-                    nlight += 1
-
-            print('Created {} tt+bb labels.'.format(n30))
-            print('Created {} tt+2b labels.'.format(n20))
-            print('Created {} tt+b labels.'.format(n10))
-            print('Created {} tt+cc labels.'.format(n01))
-            print('Created {} light flavor labels.'.format(nlight))
-            print('Number of events without label: {}'.format(n_events - 
-                (n30+n20+n10+n01+nlight)))
-
-        return labels
     
-    
-    def _get_category(self, data_dict, structured_array):
-        """Checks if the data belongs to the given category. Only keep matching
-        events.
+    def _get_categories_and_labels(self, data_dict, structured_array, n_events,
+            label):
+        """Collects events belonging to the categories and adds labels to them. 
 
         Arguments:
         ----------------
@@ -265,26 +161,59 @@ class GetBranches:
             Dictionary filled with event variables and corresponding weights.
         structured_array (numpy structured array):
             Structured array converted from ROOT file.
+        n_events (int):
+            Number of events.
+        label (string):
+            label indicating signal or background.
+
+        Returns:
+        ----------------
+        keep_dict (dict):
+            dictionary with the data to be kept.
         """
 
         keep_events = []
-        for event in range(structured_array.shape[0]):
-            TTPlusBB = structured_array[event]['GenEvt_I_TTPlusBB']
-            TTPlusCC = structured_array[event]['GenEvt_I_TTPlusCC']
+        keep_dict = dict()
+        for i in ['data', 'weights', 'labels']:
+            keep_dict[i] = []
+        if (label == 'sig'):
+            for event in range(structured_array.shape[0]):
+                keep_events.append(event)
+                keep_dict['data'].append(data_dict['data'][event])
+                keep_dict['weights'].append(data_dict['weights'][event])
+                siglab = signal_label()
+                keep_dict['labels'].append(siglab)
+            print('    Signal data: {}'.format(len(keep_dict['labels'])))
+            print('    Signal events without label: {}'.format(len(keep_dict['labels']) - n_events))
+        else:
+            bg_disc = 0
+            count_dict = {'30': 0, '20': 0, '10': 0, '01': 0, 'light': 0}
+            for event in range(structured_array.shape[0]):
+                TTPlusBB = structured_array[event]['GenEvt_I_TTPlusBB']
+                TTPlusCC = structured_array[event]['GenEvt_I_TTPlusCC']
 
-            # print(range(len(self.categories)))
-            for i in range(len(self.categories)):
-                category = self.categories[i]
-                if self._check_category(TTPlusBB, TTPlusCC, category):
-                    keep_events.append(event)
-                else:
-                    continue
+                found_one_category = False
 
-        # keep_dict = {'data': data_dict['data'][keep_events], 'weights': data_dict['weights'][keep_events]}
-        keep_dict = {'data': [data_dict['data'][i] for i in keep_events],
-                'weights': [data_dict['weights'][i] for i in keep_events],
-                'labels': [data_dict['labels'][i] for i in keep_events]}
-
+                for category in self.categories:
+                    if self._check_category(TTPlusBB, TTPlusCC, category):
+                        keep_events.append(event)
+                        keep_dict['data'].append(data_dict['data'][event])
+                        keep_dict['weights'].append(data_dict['weights'][event])
+                        bglab = bg_label(category)
+                        keep_dict['labels'].append(bglab)
+                        count_dict[category] += 1
+                        found_one_category = True
+                if not found_one_category:
+                    bg_disc += 1
+            print('    Created {} tt + bb labels.'.format(count_dict['30']))
+            print('    Created {} tt + 2b labels.'.format(count_dict['20']))
+            print('    Created {} tt + b labels.'.format(count_dict['10']))
+            print('    Created {} tt + cc labels.'.format(count_dict['01']))
+            print('    Created {} tt + light labels.'.format(count_dict['light']))
+            count_sum = count_dict['30'] + count_dict['20'] + count_dict['10'] + count_dict['01'] + count_dict['light']
+            print('    Total number of created background labels: {}'.format(count_sum))
+            print('    Background data: {}'.format(len(keep_dict['labels'])))
+            print('    Number of discarded background events: {}'.format(bg_disc))
         return keep_dict
 
 
@@ -305,6 +234,7 @@ class GetBranches:
         
         return category[name]
 
+    
     
     def _get_weights(self, structured_array):
         """Calculate the weight for each event.
@@ -333,9 +263,6 @@ class GetBranches:
         return weights
 
 
-    # def _check_category_single(self
-
-
     def _save_array(self, sig, bg):
         """Stacks data and saves the array to the given path.
 
@@ -348,7 +275,16 @@ class GetBranches:
         """
 
         array_dir = self.save_path + '/' + self.arr_name + '.npy'
+        
+        print('Shape of sig[labels]: {}'.format(sig['labels'][1].shape))
+        print('Shape of sig[data]: {}'.format(sig['data'][1].shape))
+        print('Shape of sig[weights]: {}'.format(sig['weights'][1].shape))
+        print('Shape of bg[labels]: {}'.format(bg['labels'][1].shape))
+        print('Shape of bg[data]: {}'.format(bg['data'][1].shape))
+        print('Shape of bg[weights]: {}'.format(bg['weights'][1].shape))
+
         print('Saving array to {}, '.format(array_dir), end='')
+        
         sig_arr = np.hstack((sig['labels'], sig['data'], sig['weights']))
         bg_arr = np.hstack((bg['labels'], bg['data'], bg['weights']))
 
@@ -359,6 +295,7 @@ class GetBranches:
             for branch in self.branches:
                 f.write(branch + '\n')
         print('Done.')
+
 
     def _control_plot(self, sig, bg, branches):
         """Plot histograms of all variables.
@@ -407,3 +344,47 @@ class GetBranches:
             plt.savefig(plot_dir + '/' + branches[variable] + '.png')
             plt.savefig(plot_dir + '/' + branches[variable] + '.eps')
             plt.clf()
+
+
+def signal_label():
+    return np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+
+def bg_label(category):
+    if (category == '30'):
+        return np.array([0.0, 1.0, 0.0, 0.0, 0.0, 0.0])
+    elif (category == '20'):
+        return np.array([0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
+    elif (category == '10'):
+        return np.array([0.0, 0.0, 0.0, 1.0, 0.0, 0.0])
+    elif (category == '01'):
+        return np.array([0.0, 0.0, 0.0, 0.0, 1.0, 0.0])
+    elif (category == 'light'):
+        return np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
+    else:
+        sys.exit('Something went terribly wrong. There appears to be at least one event which has not been sorted out properly.')
+
+
+# def conv_root2array(save_path, name, files, treename=None, branches=None):
+#     """Convert ROOT trees into numpy structured array.
+# 
+#     Arguments:
+#     ----------------
+#     save_path (str):
+#         Path to the directory the array will be saved in.
+#     files (str or list(str)):
+#         The name of the files that will be converted into ONE structured array.
+#     treename (str, optional (default=None)):
+#         Name of the tree to convert.
+#     branches (str of list(str), optional(default = None)):
+#         List of branch names to include as columns of the array. If None all
+#         branches will be included.
+#     """
+# 
+#     arr = root2array(files, treename, branches)
+# 
+#     if not os.path.isdir(save_path):
+#         os.makedirs(save_path)
+# 
+#     np_file = save_path + '/' + name
+#     np.save(npfile, arr)

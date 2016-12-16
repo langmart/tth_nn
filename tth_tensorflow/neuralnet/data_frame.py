@@ -5,18 +5,24 @@ class DataFrame:
     """TODO
     """
 
-    def __init__(self, x, y, ratio_weight=False):
-        self.x = x
-        self.y = y
+    def __init__(self, x, y, out_size, ratio_weight=False):
+        # self.x = x
+        # self.y = y
+        self.x = np.asarray(x)
+        self.y = np.asarray(y)
+        self.out_size = out_size
 
         bins, _ = np.histogram(y)
         self.nsig, self.nbg = bins[-1], bins[0]
         if ratio_weight:
-            w_sig = np.full((self.nsig, 1), 1.0)
-            w_bg = np.full((self.nbg, 1), float(self.nsig)/float(self.nbg))
+            # w_sig = np.full((self.nsig, 1), 1.0)
+            # w_bg = np.full((self.nbg, 1), float(self.nsig)/float(self.nbg))
+            w_sig = np.full((self.nsig, out_size), 1.0)
+            w_bg = np.full((self.nbg, out_size), float(self.nsig)/float(self.nbg))
             self.w = np.vstack((w_sig, w_bg))
         else:
-            self.w = np.full((self.x.shape[0], 1), 1.0)
+            # self.w = np.full((self.x.shape[0], 1), 1.0)
+            self.w = np.full((self.x.shape[0], out_size), 1.0)
 
         self.n = x.shape[0]
         self.nfeatures = x.shape[1]
