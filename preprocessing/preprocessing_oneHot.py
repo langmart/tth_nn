@@ -69,7 +69,7 @@ class GetBranches:
         self.out_size = out_size
         # self.save_path = branchlist.split('/')[-1].split('.')[0] + '/' +category
         self.savedir = savedir
-        self.save_path = savedir + '/converted/'
+        self.save_path = savedir + '/converted'
 
         # read text file in list
         with open(branchlist, 'r') as f:
