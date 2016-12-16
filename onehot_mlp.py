@@ -49,7 +49,6 @@ class OneHotMLP:
         self.n_features = n_features
         self.h_layers = h_layers
         self.out_size = out_size
-        self.n_labels = 1
         self.name = savedir.rsplit('/')[-1]
         self.savedir = savedir
 
@@ -91,7 +90,6 @@ class OneHotMLP:
                 biases.append(tf.Variable(tf.zeros([h_layers[i]]), name =
                     'B_{}'.format(i+1)))
 
-        # print('self.out_size: {}'.format(self.out_size))
         # connect the last hidden layer to the output layer
         weights.append(tf.Variable(tf.random_normal([h_layers[-1], self.out_size],
             stddev = tf.sqrt(2.0/h_layers[-1])), name = 'W_out'))
@@ -162,10 +160,11 @@ class OneHotMLP:
         train_graph = tf.Graph()
         with train_graph.as_default():
             x = tf.placeholder(tf.float32, [None, self.n_features])
-            # print('shape of x: {}'.format(x.get_shape()))
             y = tf.placeholder(tf.float32, [None, out_size])
-            # print('shape of y: {}'.format(y.get_shape()))
-            w = tf.placeholder(tf.float32, [None, out_size])
+            w = tf.placeholder(tf.float32, [None, 1])
+            # x = tf.placeholder(tf.float32, [self.n_features, None])
+            # y = tf.placeholder(tf.float32, [out_size, None])
+            # w = tf.placeholder(tf.float32, [1, None])
 
             weights, biases = self._get_parameters()
 
@@ -173,14 +172,13 @@ class OneHotMLP:
             y_ = self._model(x, weights, biases, keep_prob)
             # print('shape of y_: {}'.format(y_.get_shape()))
             yy_ = self._model(x, weights, biases)
-
             # loss function
             xentropy = -(tf.mul(y, tf.log(y_)) + tf.mul(1-y, tf.log(1-y_)))
             l2_reg = beta * self._l2_regularization(weights)
             loss = tf.reduce_mean(tf.mul(w, xentropy)) + l2_reg
             # xentropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(y, y_))
             # loss = xentropy + l2_reg
-
+            # loss = tf.reduce_mean(np.sum(np.square(np.subtract(y,y_))))
             # optimizer
             train_step = tf.train.AdamOptimizer(1e-3).minimize(loss)
 
@@ -211,7 +209,15 @@ class OneHotMLP:
                     # print('shape of train_x: {}'.format(train_x.shape))
                     # print('shape of train_y: {}'.format(train_y.shape))
                     # print('shape of train_w: {}'.format(train_w.shape))
-
+                    # train_x = np.transpose(train_x)
+                    # train_y = np.transpose(train_y)
+                    # train_w = np.transpose(train_w)
+                    # print('shape of train_x: {}'.format(train_x.shape))
+                    # print('shape of train_y: {}'.format(train_y.shape))
+                    # print('shape of train_w: {}'.format(train_w.shape))
+        
+                    # train_dict = {x:train_x, y:train_y, w:train_w}
+                    # _, train_loss = sess.run([train_step, loss], train_dict)
                     _, train_loss = sess.run([train_step, loss], {x:train_x, y:train_y, w:train_w})
                     epoch_loss += train_loss
                 train_losses.append(np.mean(epoch_loss))
