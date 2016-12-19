@@ -7,14 +7,14 @@ from data_frame_oneHot import DataFrame
 path = 'data/converted/'
 outpath = 'data/executed/'
 print('Loading data...')
-train = np.load(path + 'even1_testing1.npy')
-val = np.load(path + 'odd1_testing1.npy')
+train = np.load(path + 'even1_without_light.npy')
+val = np.load(path + 'odd1_without_light.npy')
 print('done.')
 
 # print(train[0])
 
 
-outsize = 6
+outsize = 5
 N_EPOCHS = 10
 learning_rate = 3
 hidden_layers = [500, 500, 500]

@@ -1,4 +1,4 @@
-from preprocessing.preprocessing_oneHot import GetBranches
+from preprocessing.preprocessing_oneHot_without_light import GetBranches
 
 loaddir = '/storage/7/lang/ntuples/numpy/'
 
@@ -14,10 +14,10 @@ branchlist = 'branchlists/converted_2016-12-19.txt'
 # '20': tt + 2b
 # '10': tt + b
 # '01': tt + cc
-categorylist = ['30','20','10','01', 'light'] 
+categorylist = ['30','20','10','01'] 
 # 
 out_size = 1 + len(categorylist)
 print('Calculated dimension of output vector: {}'.format(out_size))
 get_branches = GetBranches('./data', branchlist, categorylist, out_size)
-get_branches.process(ttH_Even, ttbarSL_Even, 'even1')
-get_branches.process(ttH_Odd, ttbarSL_Odd, 'odd1')
+get_branches.process(ttH_Even, ttbarSL_Even, 'even1_without_light')
+get_branches.process(ttH_Odd, ttbarSL_Odd, 'odd1_without_light')

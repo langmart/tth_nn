@@ -25,7 +25,7 @@ class GetBranches:
         Name of the new array.
     """
 
-    def __init__(self, savedir, branchlist, categories=['30','20','10','01','light'], out_size = 6):
+    def __init__(self, savedir, branchlist, categories=['30','20','10','01'], out_size = 6):
         """Initializes the class with the given attributes.
 
         Attributes:
@@ -197,7 +197,7 @@ class GetBranches:
             print('    Signal events without label: {}'.format(len(keep_dict['labels']) - n_events))
         else:
             bg_disc = 0
-            count_dict = {'30': 0, '20': 0, '10': 0, '01': 0, 'light': 0}
+            count_dict = {'30': 0, '20': 0, '10': 0, '01': 0}
             for event in range(structured_array.shape[0]):
                 TTPlusBB = structured_array[event]['GenEvt_I_TTPlusBB']
                 TTPlusCC = structured_array[event]['GenEvt_I_TTPlusCC']
@@ -219,8 +219,7 @@ class GetBranches:
             print('    Created {} tt + 2b labels.'.format(count_dict['20']))
             print('    Created {} tt + b labels.'.format(count_dict['10']))
             print('    Created {} tt + cc labels.'.format(count_dict['01']))
-            print('    Created {} tt + light labels.'.format(count_dict['light']))
-            count_sum = count_dict['30'] + count_dict['20'] + count_dict['10'] + count_dict['01'] + count_dict['light']
+            count_sum = count_dict['30'] + count_dict['20'] + count_dict['10'] + count_dict['01']
             print('    Total number of created background labels: {}'.format(count_sum))
             print('    Background data: {}'.format(len(keep_dict['labels'])))
             print('    Number of discarded background events: {}'.format(bg_disc))
@@ -239,8 +238,7 @@ class GetBranches:
         category = {'30': (TTPlusBB == 3 and TTPlusCC == 0),
                     '20': (TTPlusBB == 2 and TTPlusCC == 0),
                     '10': (TTPlusBB == 1 and TTPlusCC == 0),
-                    '01': (TTPlusBB == 0 and TTPlusCC == 1),
-                    'light': (TTPlusBB == 0 and TTPlusCC == 0)}
+                    '01': (TTPlusBB == 0 and TTPlusCC == 1)}
         
         return category[name]
 
@@ -357,20 +355,18 @@ class GetBranches:
 
 
 def signal_label():
-    return np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    return np.array([1.0, 0.0, 0.0, 0.0, 0.0])
 
 
 def bg_label(category):
     if (category == '30'):
-        return np.array([0.0, 1.0, 0.0, 0.0, 0.0, 0.0])
+        return np.array([0.0, 1.0, 0.0, 0.0, 0.0])
     elif (category == '20'):
-        return np.array([0.0, 0.0, 1.0, 0.0, 0.0, 0.0])
+        return np.array([0.0, 0.0, 1.0, 0.0, 0.0])
     elif (category == '10'):
-        return np.array([0.0, 0.0, 0.0, 1.0, 0.0, 0.0])
+        return np.array([0.0, 0.0, 0.0, 1.0, 0.0])
     elif (category == '01'):
-        return np.array([0.0, 0.0, 0.0, 0.0, 1.0, 0.0])
-    elif (category == 'light'):
-        return np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0])
+        return np.array([0.0, 0.0, 0.0, 0.0, 1.0])
     else:
         sys.exit('Something went terribly wrong. There appears to be at least one event which has not been sorted out properly.')
 
