@@ -14,7 +14,7 @@ import os
 import sys
 import time
 
-from sklearn.metrics import roc_auc_score, roc_curve
+# from sklearn.metrics import roc_auc_score, roc_curve
 
 class OneHotMLP:
     """A one-hot output vector classifier using a multi layer perceptron.
@@ -180,6 +180,7 @@ class OneHotMLP:
         with tf.Session(graph=train_graph) as sess:
             self.model_loc = self.savedir + '/{}.ckpt'.format(self.name)
             sess.run(init)
+            accuracy = []
             train_auc = []
             val_auc = []
             train_losses = []
@@ -187,7 +188,8 @@ class OneHotMLP:
             print(110*'-')
             print('Train model: {}'.format(self.model_loc))
             print(110*'_')
-            print('{:^25} | {:^25} | {:^25} | {:^25}'.format('Epoch', 'Training Loss', 'AUC Training Score', 'AUC Validation Score'))
+            print('{:^25} | {:^25} | {:^25} | {:^25}'.format('Epoch', 'Training Loss', 
+                'Accuracy', 'AUC Validation Score'))
             print(110*'-')
 
             for epoch in range(epochs):
@@ -204,11 +206,19 @@ class OneHotMLP:
                 train_pre = sess.run(yy_, {x:train_data.x})
                 # roc_curve not yet working
                 # train_auc.append(roc_auc_score(train_data.y, train_pre))
-                val_pre = sess.run(yy_, {x:val_data.x})
+                # val_pre = sess.run(yy_, {x:val_data.x})
+                
+                val_pre = sess.run(y_, {x:train_data.x})
+                correct, mistag = self._validate_epoch(val_pre, val_data.y)
+                print (correct, mistag)
+                accuracy.append(correct / (correct + mistag))
+                
+                
                 # roc_curve not yet working
                 # val_auc.append(roc_auc_score(val_data.y, val_pre))
                 # print('{:^25} | {:^25.4f} | {:^25.4f} | {:^25.4f}'.format(epoch+1, train_losses[-1], train_auc[-1], val_auc[-1]))
-                print('{:^25} | {:^25.4f}'.format(epoch + 1, train_losses[-1]))
+                print('{:^25} | {:^25.4f} | {:^25.4f}'.format(epoch + 1,
+                    train_losses[-1], accuracy[-1]))
                 saver.save(sess, self.model_loc)
             print(110*'-')
             train_end=time.time()
@@ -230,6 +240,53 @@ class OneHotMLP:
         # Applies tf.nn.l2_loss to all elements of weights
         weights = map(lambda x: tf.nn.l2_loss(x), weights)
         return sum(weights)
+
+
+    def _validate_epoch(self, pred, labels):
+        """Evaluates the training process.
+
+        Arguments:
+        ----------------
+        pred (np.array):
+            Predictions made by the model for the data fed into it.
+        labels (np.array):
+            Labels of the validation dataset.
+
+        Returns:
+        ----------------
+
+        """
+        pred_onehot = self._onehot(pred, len(pred))
+        # print (pred_onehot[0], labels[0])
+        correct = 0
+        mistag = 0
+
+        for i in range(pred_onehot.shape[0]):
+            # TODO
+            equal = True
+            # print(pred_onehot.shape[1])
+            for j in range(pred_onehot.shape[1]):
+                if (pred_onehot[i][j] != labels[i][j]):
+                    equal = False
+            if (equal == True):
+                correct += 1
+            else:
+                mistag += 1
+        return correct, mistag
+
+    def _onehot(self, arr, length):
+        # TODO
+        for i in range(arr.shape[0]):
+            arr2 = arr[i]
+            ind = np.argmax(arr2)
+            for j in range(arr2.shape[0]):
+                if (j == ind):
+                    arr2[j] = 1.0
+                else:
+                    arr2[j] = 0.0
+            arr[i] = arr2
+        return arr
+
 
 
     def _write_parameters(self, epochs, batch_size, keep_prob, beta, time):
