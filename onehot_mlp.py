@@ -166,9 +166,9 @@ class OneHotMLP:
             yy_ = self._model(x, weights, biases)
             # loss function
             xentropy = -(tf.mul(y, tf.log(y_ + 1e-7)) + tf.mul(1-y, tf.log(1-y_ + 1e-7)))
-            l2_reg = beta * beta * self._l2_regularization(weights)
-            loss = tf.reduce_mean(tf.mul(w, xentropy))
-            # loss = tf.reduce_mean(np.sum(np.square(np.subtract(y,y_))))
+            l2_reg = beta * self._l2_regularization(weights)
+            # loss = tf.reduce_mean(tf.mul(w, xentropy))
+            loss = tf.reduce_mean(np.sum(np.square(np.subtract(y,y_)))) + l2_reg
             # optimizer
             train_step = tf.train.AdamOptimizer(learning_rate=1e-6).minimize(loss)
 
@@ -180,7 +180,8 @@ class OneHotMLP:
         with tf.Session(graph=train_graph) as sess:
             self.model_loc = self.savedir + '/{}.ckpt'.format(self.name)
             sess.run(init)
-            accuracy = []
+            train_accuracy = []
+            val_accuracy = []
             train_auc = []
             val_auc = []
             train_losses = []
@@ -189,7 +190,7 @@ class OneHotMLP:
             print('Train model: {}'.format(self.model_loc))
             print(110*'_')
             print('{:^25} | {:^25} | {:^25} | {:^25}'.format('Epoch', 'Training Loss', 
-                'Accuracy', 'AUC Validation Score'))
+                'Training Accuracy', 'Validation Accuracy'))
             print(110*'-')
 
             for epoch in range(epochs):
@@ -201,24 +202,29 @@ class OneHotMLP:
                     _, train_loss = sess.run([train_step, loss], {x:train_x, y:train_y, w:train_w})
                     epoch_loss += train_loss
                 train_losses.append(np.mean(epoch_loss))
+                train_data.shuffle()
 
                 # monitor training
                 train_pre = sess.run(yy_, {x:train_data.x})
+                train_corr, train_mistag = self._validate_epoch(train_pre,
+                        train_data.y)
+                print('train: {}'.format((train_corr, train_mistag)))
+                train_accuracy.append(train_corr / (train_corr + train_mistag))
                 # roc_curve not yet working
                 # train_auc.append(roc_auc_score(train_data.y, train_pre))
                 # val_pre = sess.run(yy_, {x:val_data.x})
                 
-                val_pre = sess.run(y_, {x:train_data.x})
-                correct, mistag = self._validate_epoch(val_pre, val_data.y)
-                print (correct, mistag)
-                accuracy.append(correct / (correct + mistag))
+                val_pre = sess.run(yy_, {x:val_data.x})
+                val_corr, val_mistag = self._validate_epoch(val_pre, val_data.y)
+                print('validation: {}'.format((val_corr, val_mistag)))
+                val_accuracy.append(val_corr / (val_corr + val_mistag))
                 
                 
                 # roc_curve not yet working
                 # val_auc.append(roc_auc_score(val_data.y, val_pre))
                 # print('{:^25} | {:^25.4f} | {:^25.4f} | {:^25.4f}'.format(epoch+1, train_losses[-1], train_auc[-1], val_auc[-1]))
-                print('{:^25} | {:^25.4f} | {:^25.4f}'.format(epoch + 1,
-                    train_losses[-1], accuracy[-1]))
+                print('{:^25} | {:^25.4f} | {:^25.4f} | {:^25.4f}'.format(epoch + 1, 
+                    train_losses[-1], train_accuracy[-1], val_accuracy[-1]))
                 saver.save(sess, self.model_loc)
             print(110*'-')
             train_end=time.time()
