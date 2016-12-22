@@ -1,3 +1,4 @@
+train*.py
 __pycache__
 branchlists
 graph/

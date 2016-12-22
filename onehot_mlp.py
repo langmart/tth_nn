@@ -1,4 +1,3 @@
-# Written by Martin Lang.
 # A one-hot output vector multi layer perceptron classifier. Currently depends on
 # a custom dataset class defined in higgs_dataset.py. It is also assumed that
 # there are no errors in the shape of the dataset.
@@ -79,40 +78,40 @@ class OneHotMLP:
         n_features = self.n_features
         h_layers = self.h_layers
 
-        # weights = [tf.Variable(tf.random_normal([n_features, h_layers[0]], stddev=tf.sqrt(2.0/n_features)), name = 'W_1')]
+        weights = [tf.Variable(tf.random_normal([n_features, h_layers[0]], stddev=tf.sqrt(2.0/n_features)), name = 'W_1')]
         # biases = [tf.Variable(tf.zeros([h_layers[0]]), name = 'B_1')]
-        # biases = [tf.Variable(tf.random_normal([h_layers[0]], stddev =
-        #     tf.sqrt(2.0 / (h_layers[0]))), name = 'B_1')]
+        biases = [tf.Variable(tf.random_normal([h_layers[0]], stddev =
+            tf.sqrt(2.0 / (h_layers[0]))), name = 'B_1')]
 
 
-        weights = [tf.Variable(tf.random_uniform([n_features, h_layers[0]],
-            minval=0.0, maxval=1.0), name='W_1')]
-        biases = [tf.Variable(tf.random_uniform([h_layers[0]], minval = 0.0,
-            maxval = 1.0), name = 'B_1')]
+        # weights = [tf.Variable(tf.random_uniform([n_features, h_layers[0]],
+        #     minval=0.0, maxval=1.0), name='W_1')]
+        # biases = [tf.Variable(tf.random_uniform([h_layers[0]], minval = 0.0,
+        #     maxval = 1.0), name = 'B_1')]
 
 
         # if more than 1 hidden layer -> create additional weights and biases
         if len(h_layers) > 1:
             for i in range(1, len(h_layers)):
-                # weights.append(tf.Variable(tf.random_normal([h_layers[i-1],
-                #     h_layers[i]], stddev = tf.sqrt(2.0 / h_layers[i-1])), name =
-                #     'W_{}'.format(i+1)))
-                # biases.append(tf.Variable(tf.zeros([h_layers[i]]), name =
-                #     'B_{}'.format(i+1)))
-                weights.append(tf.Variable(tf.random_uniform([h_layers[i-1],
-                    h_layers[i]], minval = 0.0, maxval = 1.0), name =
+                weights.append(tf.Variable(tf.random_normal([h_layers[i-1],
+                    h_layers[i]], stddev = tf.sqrt(2.0 / h_layers[i-1])), name =
                     'W_{}'.format(i+1)))
-                biases.append(tf.Variable(tf.random_uniform([h_layers[i]],
-                    minval = 0.0, maxval = 1.0), name = 'B_{}'.format(i+1)))
+                biases.append(tf.Variable(tf.zeros([h_layers[i]]), name =
+                    'B_{}'.format(i+1)))
+                # weights.append(tf.Variable(tf.random_uniform([h_layers[i-1],
+                #     h_layers[i]], minval = 0.0, maxval = 1.0), name =
+                #     'W_{}'.format(i+1)))
+                # biases.append(tf.Variable(tf.random_uniform([h_layers[i]],
+                #     minval = 0.0, maxval = 1.0), name = 'B_{}'.format(i+1)))
 
         # connect the last hidden layer to the output layer
-        # weights.append(tf.Variable(tf.random_normal([h_layers[-1], self.out_size],
-        #     stddev = tf.sqrt(2.0/h_layers[-1])), name = 'W_out'))
-        # biases.append(tf.Variable(tf.zeros([self.out_size]), name = 'B_out'))
-        weights.append(tf.Variable(tf.random_uniform([h_layers[-1],
-            self.out_size], minval = 0.0, maxval = 1.0), name = 'W_out'))
-        biases.append(tf.Variable(tf.random_uniform([self.out_size], minval =
-            0.0, maxval = 1.0), name = 'B_out'))
+        weights.append(tf.Variable(tf.random_normal([h_layers[-1], self.out_size],
+            stddev = tf.sqrt(2.0/h_layers[-1])), name = 'W_out'))
+        biases.append(tf.Variable(tf.zeros([self.out_size]), name = 'B_out'))
+        # weights.append(tf.Variable(tf.random_uniform([h_layers[-1],
+        #     self.out_size], minval = 0.0, maxval = 1.0), name = 'W_out'))
+        # biases.append(tf.Variable(tf.random_uniform([self.out_size], minval =
+        #     0.0, maxval = 1.0), name = 'B_out'))
 
         
         return weights, biases
@@ -146,8 +145,8 @@ class OneHotMLP:
 
         out = tf.matmul(layer, W[-1]) + B[-1]
         # return tf.nn.softplus(out)
-        return tf.nn.sigmoid(out)
-        # return tf.nn.relu(out)
+        # return tf.nn.sigmoid(out)
+        return tf.nn.relu(out)
 
 
     def train(self, train_data, val_data, epochs = 10, batch_size = 100,
@@ -184,7 +183,8 @@ class OneHotMLP:
             y_ = self._model(x, weights, biases, keep_prob)
             yy_ = self._model(x, weights, biases)
             # loss function
-            xentropy = -(tf.mul(y, tf.log(y_ + 1e-7)) + tf.mul(1-y, tf.log(1-y_ + 1e-7)))
+            xentropy = - 1.0 / batch_size * (tf.mul(y, tf.log(y_ + 1e-7)) + tf.mul(1-y, tf.log(1-y_
+                + 1e-7)))
             # l2_reg = 0.0
             # l2_reg = beta * self._l2_regularization(weights)
             loss = tf.reduce_mean(tf.mul(w, xentropy))
@@ -417,7 +417,7 @@ class OneHotMLP:
         plt.savefig(self.savedir + '/' + plt_name + '.pdf')
         plt.savefig(self.savedir + '/' + plt_name + '.png')
         plt.savefig(self.savedir + '/' + plt_name + '.eps')
-
+        plt.clf()
 
     def _plot_auc_dev(self, train_auc, val_auc, nepochs):
         """Plot ROC-AUC-Score development
