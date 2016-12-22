@@ -141,20 +141,11 @@ class GetBranches:
         for branch in branches:
             if branch in jets:
                 # only keep the first four entries of the jet vector
-                
-                # print(branch, structured_array[branch][0])
-                # for i in range(4):
-                #     array = structured_array[branch][i]
-                #     print('yes, shape: {}'.format(array.shape))
-                #     ndarray.append(array)
-                #     new_branches += [branch+'_{}'.format(i)]
                 array = [jet[:4] for jet in structured_array[branch]]
                 ndarray.append(np.vstack(array))
                 new_branches += [branch+'_{}'.format(i) for i in range(1,5)]
-                # new_branches += [branch+'_{}'.format(i) for i in range(1,5)]
             else:
                 array = structured_array[branch].reshape(-1,1)
-                print('no, shape: {}'.format(array.shape))
                 ndarray.append(array)
                 new_branches += [branch]
             # print('Appended {}.'.format(new_branches[-1]))

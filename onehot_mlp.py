@@ -79,22 +79,41 @@ class OneHotMLP:
         n_features = self.n_features
         h_layers = self.h_layers
 
-        weights = [tf.Variable(tf.random_normal([n_features, h_layers[0]], stddev=tf.sqrt(2.0/n_features)), name = 'W_1')]
-        biases = [tf.Variable(tf.zeros([h_layers[0]]), name = 'B_1')]
+        # weights = [tf.Variable(tf.random_normal([n_features, h_layers[0]], stddev=tf.sqrt(2.0/n_features)), name = 'W_1')]
+        # biases = [tf.Variable(tf.zeros([h_layers[0]]), name = 'B_1')]
+        # biases = [tf.Variable(tf.random_normal([h_layers[0]], stddev =
+        #     tf.sqrt(2.0 / (h_layers[0]))), name = 'B_1')]
+
+
+        weights = [tf.Variable(tf.random_uniform([n_features, h_layers[0]],
+            minval=0.0, maxval=1.0), name='W_1')]
+        biases = [tf.Variable(tf.random_uniform([h_layers[0]], minval = 0.0,
+            maxval = 1.0), name = 'B_1')]
+
 
         # if more than 1 hidden layer -> create additional weights and biases
         if len(h_layers) > 1:
             for i in range(1, len(h_layers)):
-                weights.append(tf.Variable(tf.random_normal([h_layers[i-1],
-                    h_layers[i]], stddev = tf.sqrt(2.0 / h_layers[i-1])), name =
+                # weights.append(tf.Variable(tf.random_normal([h_layers[i-1],
+                #     h_layers[i]], stddev = tf.sqrt(2.0 / h_layers[i-1])), name =
+                #     'W_{}'.format(i+1)))
+                # biases.append(tf.Variable(tf.zeros([h_layers[i]]), name =
+                #     'B_{}'.format(i+1)))
+                weights.append(tf.Variable(tf.random_uniform([h_layers[i-1],
+                    h_layers[i]], minval = 0.0, maxval = 1.0), name =
                     'W_{}'.format(i+1)))
-                biases.append(tf.Variable(tf.zeros([h_layers[i]]), name =
-                    'B_{}'.format(i+1)))
+                biases.append(tf.Variable(tf.random_uniform([h_layers[i]],
+                    minval = 0.0, maxval = 1.0), name = 'B_{}'.format(i+1)))
 
         # connect the last hidden layer to the output layer
-        weights.append(tf.Variable(tf.random_normal([h_layers[-1], self.out_size],
-            stddev = tf.sqrt(2.0/h_layers[-1])), name = 'W_out'))
-        biases.append(tf.Variable(tf.zeros([self.out_size]), name = 'B_out'))
+        # weights.append(tf.Variable(tf.random_normal([h_layers[-1], self.out_size],
+        #     stddev = tf.sqrt(2.0/h_layers[-1])), name = 'W_out'))
+        # biases.append(tf.Variable(tf.zeros([self.out_size]), name = 'B_out'))
+        weights.append(tf.Variable(tf.random_uniform([h_layers[-1],
+            self.out_size], minval = 0.0, maxval = 1.0), name = 'W_out'))
+        biases.append(tf.Variable(tf.random_uniform([self.out_size], minval =
+            0.0, maxval = 1.0), name = 'B_out'))
+
         
         return weights, biases
 
@@ -166,11 +185,13 @@ class OneHotMLP:
             yy_ = self._model(x, weights, biases)
             # loss function
             xentropy = -(tf.mul(y, tf.log(y_ + 1e-7)) + tf.mul(1-y, tf.log(1-y_ + 1e-7)))
-            l2_reg = beta * self._l2_regularization(weights)
-            # loss = tf.reduce_mean(tf.mul(w, xentropy))
-            loss = tf.reduce_mean(np.sum(np.square(np.subtract(y,y_)))) + l2_reg
+            # l2_reg = 0.0
+            # l2_reg = beta * self._l2_regularization(weights)
+            loss = tf.reduce_mean(tf.mul(w, xentropy))
+            # loss = tf.reduce_mean(np.sum(np.square(np.subtract(y,y_))))
             # optimizer
-            train_step = tf.train.AdamOptimizer(learning_rate=1e-6).minimize(loss)
+            train_step = tf.train.AdamOptimizer(learning_rate).minimize(loss)
+
 
             # initialize all variables
             init = tf.initialize_all_variables()
@@ -231,6 +252,7 @@ class OneHotMLP:
 
             # self._validation(val_pre, val_data.y)
             # self._plot_auc_dev(train_auc, val_auc, epochs)
+            self._plot_accuracy(train_accuracy, val_accuracy, epochs)
             self._plot_loss(train_losses)
             self.trained = True
             self._write_parameters(epochs, batch_size, keep_prob, beta,
@@ -378,6 +400,23 @@ class OneHotMLP:
         plt.savefig(self.savedir + '/loss.png')
         plt.savefig(self.savedir + '/loss.eps')
         plt.clf()
+
+
+    def _plot_accuracy(self, train_accuracy, val_accuracy, epochs):
+        """Plot the training and validation accuracies.
+        """
+        plt.plot(train_accuracy, color = 'red', label='Training accuracy')
+        plt.plot(val_accuracy, color = 'black', label='Validation accuracy')
+        plt.xlabel('Epoch')
+        plt.ylabel('Accuracy')
+        plt.title('Accuracy development')
+        plt.legend(loc='best')
+        plt.grid(True)
+        plt_name = self.name + '_accuracy'
+        
+        plt.savefig(self.savedir + '/' + plt_name + '.pdf')
+        plt.savefig(self.savedir + '/' + plt_name + '.png')
+        plt.savefig(self.savedir + '/' + plt_name + '.eps')
 
 
     def _plot_auc_dev(self, train_auc, val_auc, nepochs):
