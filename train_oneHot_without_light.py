@@ -15,10 +15,10 @@ print('done.')
 
 beta = 0.0
 outsize = 5
-N_EPOCHS = 100
-learning_rate = 5e-5
-hidden_layers = [40, 25]
-exec_name = 'nn_models/40+25_oneHot_without_light'
+N_EPOCHS = 1000
+learning_rate = 1e-5
+hidden_layers = [200, 100]
+exec_name = 'nn_models/200+100_oneHot_without_light'
 train = DataFrame(train, out_size=outsize)
 val = DataFrame(val, out_size=outsize)
 
