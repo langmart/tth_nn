@@ -84,26 +84,43 @@ class GetBranches:
 
         sig = {'data': sig_data}
         bg = {'data': bg_data}
-        # print(bg)
+
+        n_sig_events = sig['data'].shape[0]
+        n_bg_events = bg['data'].shape[0]
+        bg_numbers = self._get_numbers(structured_bg)
+        print(bg_numbers)
 
         print('Calculating weights, ', end='')
         sig['weights'] = self._get_weights(structured_sig)
         bg['weights'] = self._get_weights(structured_bg)
         print('done.')
 
-        n_sig_events = sig['data'].shape[0]
-        n_bg_events = bg['data'].shape[0]
-
         print('Found categories: {}.'.format(self.categories))
 
         print('Getting categories and labels, ')
         sign = self._get_categories_and_labels(sig, structured_sig,
-                n_sig_events, 'sig')
+                n_sig_events, 'sig', n_sig_events)
         bgn = self._get_categories_and_labels(bg, structured_bg, n_bg_events,
-        'bg')
+        'bg', bg_numbers)
         print('done.')
+        print('Further weights have been applied.')
 
         self._save_array(sign,bgn)
+
+
+    def _get_numbers(self, structured_array):
+        category_numbers = np.zeros_like(self.categories, dtype=int)
+        print(category_numbers)
+        for event in range(structured_array.shape[0]):
+            TTPlusBB = structured_array[event]['GenEvt_I_TTPlusBB']
+            TTPlusCC = structured_array[event]['GenEvt_I_TTPlusCC']
+
+            for i in range(len(category_numbers)):
+                if self._check_category(TTPlusBB, TTPlusCC, self.categories[i]):
+                    category_numbers[i] += 1
+        return category_numbers
+            
+
 
 
     def _get_branches(self, structured_array, branches):
@@ -153,7 +170,7 @@ class GetBranches:
 
     
     def _get_categories_and_labels(self, data_dict, structured_array, n_events,
-            label):
+            label, numbers):
         """Collects events belonging to the categories and adds labels to them. 
 
         Arguments:
@@ -166,6 +183,8 @@ class GetBranches:
             Number of events.
         label (string):
             label indicating signal or background.
+        numbers (int array):
+            An array indicating how many events of each category were found.
 
         Returns:
         ----------------
@@ -181,13 +200,15 @@ class GetBranches:
             for event in range(structured_array.shape[0]):
                 keep_events.append(event)
                 keep_dict['data'].append(data_dict['data'][event])
-                keep_dict['weights'].append(data_dict['weights'][event])
+                # keep_dict['weights'].append(data_dict['weights'][event] * 100.0)
+                keep_dict['weights'].append([1.0])
                 siglab = signal_label()
                 keep_dict['labels'].append(siglab)
             print('    Signal data: {}'.format(len(keep_dict['labels'])))
             print('    Signal events without label: {}'.format(len(keep_dict['labels']) - n_events))
         else:
             bg_disc = 0
+            bg_total = np.sum(numbers)
             count_dict = {'30': 0, '20': 0, '10': 0, '01': 0, 'light': 0}
             for event in range(structured_array.shape[0]):
                 TTPlusBB = structured_array[event]['GenEvt_I_TTPlusBB']
@@ -195,11 +216,14 @@ class GetBranches:
 
                 found_one_category = False
 
-                for category in self.categories:
+                for i in range(len(self.categories)):
+                    category = self.categories[i]
                     if self._check_category(TTPlusBB, TTPlusCC, category):
                         keep_events.append(event)
                         keep_dict['data'].append(data_dict['data'][event])
-                        keep_dict['weights'].append(data_dict['weights'][event])
+                        # keep_dict['weights'].append(data_dict['weights'][event]
+                        #         * numbers[i] / bg_total)
+                        keep_dict['weights'].append([numbers[i] / bg_total])
                         bglab = bg_label(category)
                         keep_dict['labels'].append(bglab)
                         count_dict[category] += 1
@@ -216,6 +240,7 @@ class GetBranches:
             print('    Background data: {}'.format(len(keep_dict['labels'])))
             print('    Number of discarded background events: {}'.format(bg_disc))
         return keep_dict
+
 
 
     def _check_category(self, TTPlusBB, TTPlusCC, name):
@@ -260,6 +285,8 @@ class GetBranches:
         weights, _ = self._get_branches(structured_array, weight_names)
         weights = np.prod(weights, axis=1).reshape(-1,1)
         weights /+ np.sum(weights)
+
+        
 
         return weights
 

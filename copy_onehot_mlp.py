@@ -150,7 +150,7 @@ class OneHotMLP:
 
 
     def train(self, train_data, val_data, epochs = 10, batch_size = 100,
-            learning_rate = 1e-3, keep_prob = 0.9, beta = 0.0, out_size=1):
+            learning_rate = 1e-6, keep_prob = 0.9, beta = 0.0, out_size=1):
         """Trains the classifier
 
         Arguments:
@@ -183,8 +183,8 @@ class OneHotMLP:
             y_ = self._model(x, weights, biases, keep_prob)
             yy_ = self._model(x, weights, biases)
             # loss function
-            xentropy = - (tf.mul(y, tf.log(y_ + 1e-5)) + tf.mul(1-y, tf.log(1-y_
-                + 1e-5)))
+            xentropy = - (tf.mul(y, tf.log(y_ + 1e-9)) + tf.mul(1-y, tf.log(1-y_
+                + 1e-9)))
             # l2_reg = 0.0
             # l2_reg = beta * self._l2_regularization(weights)
             # loss = tf.reduce_mean(tf.mul(w, xentropy))
