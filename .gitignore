@@ -1,4 +1,5 @@
 train*.py
+get_branches_*
 __pycache__
 branchlists
 graph/
