@@ -183,12 +183,12 @@ class OneHotMLP:
             y_ = self._model(x, weights, biases, keep_prob)
             yy_ = self._model(x, weights, biases)
             # loss function
-            xentropy = - (tf.mul(y, tf.log(y_ + 1e-5)) + tf.mul(1-y, tf.log(1-y_
-                + 1e-5)))
+            # xentropy = - (tf.mul(y, tf.log(y_ + 1e-10)) + tf.mul(1-y, tf.log(1-y_ + 1e-10)))
+            xentropy = tf.reduce_sum(tf.mul( - y, tf.log(y_ + 1e-10)))
             # l2_reg = 0.0
-            # l2_reg = beta * self._l2_regularization(weights)
-            # loss = tf.reduce_mean(tf.mul(w, xentropy))
-            loss = tf.reduce_mean(np.sum(np.square(np.subtract(y,y_))))
+            l2_reg = beta * self._l2_regularization(weights)
+            loss = tf.reduce_mean(tf.mul(w, xentropy)) + l2_reg
+            # loss = tf.reduce_mean(np.sum(np.square(np.subtract(y,y_))))
             # optimizer
             train_step = tf.train.AdamOptimizer(learning_rate).minimize(loss)
 
@@ -247,6 +247,9 @@ class OneHotMLP:
                 print('{:^25} | {:^25.4f} | {:^25.4f} | {:^25.4f}'.format(epoch + 1, 
                     train_losses[-1], train_accuracy[-1], val_accuracy[-1]))
                 saver.save(sess, self.model_loc)
+                if (epoch % 10 == 0):
+                    self._plot_accuracy(train_accuracy, val_accuracy, epochs)
+                    self._plot_loss(train_losses)
             print(110*'-')
             train_end=time.time()
 

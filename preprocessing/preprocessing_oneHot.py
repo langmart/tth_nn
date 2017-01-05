@@ -99,9 +99,9 @@ class GetBranches:
 
         print('Getting categories and labels, ')
         sign = self._get_categories_and_labels(sig, structured_sig,
-                n_sig_events, 'sig', n_sig_events)
+                n_sig_events, 'sig', n_sig_events, n_sig_events)
         bgn = self._get_categories_and_labels(bg, structured_bg, n_bg_events,
-        'bg', bg_numbers)
+        'bg', bg_numbers, n_sig_events)
         print('done.')
         print('Further weights have been applied.')
 
@@ -170,7 +170,7 @@ class GetBranches:
 
     
     def _get_categories_and_labels(self, data_dict, structured_array, n_events,
-            label, numbers):
+            label, numbers, n_sig_events):
         """Collects events belonging to the categories and adds labels to them. 
 
         Arguments:
@@ -192,6 +192,9 @@ class GetBranches:
             dictionary with the data to be kept.
         """
 
+
+        bg_total = np.sum(numbers)
+        total = n_sig_events + bg_total
         keep_events = []
         keep_dict = dict()
         for i in ['data', 'weights', 'labels']:
@@ -201,14 +204,13 @@ class GetBranches:
                 keep_events.append(event)
                 keep_dict['data'].append(data_dict['data'][event])
                 # keep_dict['weights'].append(data_dict['weights'][event] * 100.0)
-                keep_dict['weights'].append([1.0])
+                keep_dict['weights'].append([1.0 / total])
                 siglab = signal_label()
                 keep_dict['labels'].append(siglab)
             print('    Signal data: {}'.format(len(keep_dict['labels'])))
             print('    Signal events without label: {}'.format(len(keep_dict['labels']) - n_events))
         else:
             bg_disc = 0
-            bg_total = np.sum(numbers)
             count_dict = {'30': 0, '20': 0, '10': 0, '01': 0, 'light': 0}
             for event in range(structured_array.shape[0]):
                 TTPlusBB = structured_array[event]['GenEvt_I_TTPlusBB']
@@ -223,7 +225,7 @@ class GetBranches:
                         keep_dict['data'].append(data_dict['data'][event])
                         # keep_dict['weights'].append(data_dict['weights'][event]
                         #         * numbers[i] / bg_total)
-                        keep_dict['weights'].append([numbers[i] / bg_total])
+                        keep_dict['weights'].append([numbers[i] / total])
                         bglab = bg_label(category)
                         keep_dict['labels'].append(bglab)
                         count_dict[category] += 1
