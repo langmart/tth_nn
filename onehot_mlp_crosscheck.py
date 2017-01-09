@@ -62,6 +62,10 @@ class OneHotMLP:
         # create directory if necessary
         if not os.path.isdir(self.savedir):
             os.makedirs(self.savedir)
+        
+        self.cross_savedir = self.savedir + '/cross_checks'
+        if not os.path.isdir(self.cross_savedir):
+            os.makedirs(self.cross_savedir)
 
 
     def _get_parameters(self):
@@ -227,8 +231,8 @@ class OneHotMLP:
 
                 # monitor training
                 train_pre = sess.run(yy_, {x:train_data.x})
-                train_corr, train_mistag = self._validate_epoch(train_pre,
-                        train_data.y)
+                train_corr, train_mistag, train_true, train_pred = self._validate_epoch(train_pre,
+                        train_data.y, epoch)
                 print('train: {}'.format((train_corr, train_mistag)))
                 train_accuracy.append(train_corr / (train_corr + train_mistag))
                 # roc_curve not yet working
@@ -236,7 +240,8 @@ class OneHotMLP:
                 # val_pre = sess.run(yy_, {x:val_data.x})
                 
                 val_pre = sess.run(yy_, {x:val_data.x})
-                val_corr, val_mistag = self._validate_epoch(val_pre, val_data.y)
+                val_corr, val_mistag, val_true, val_pred = self._validate_epoch(
+                        val_pre, val_data.y, epoch)
                 print('validation: {}'.format((val_corr, val_mistag)))
                 val_accuracy.append(val_corr / (val_corr + val_mistag))
                 
@@ -247,9 +252,11 @@ class OneHotMLP:
                 print('{:^25} | {:^25.4f} | {:^25.4f} | {:^25.4f}'.format(epoch + 1, 
                     train_losses[-1], train_accuracy[-1], val_accuracy[-1]))
                 saver.save(sess, self.model_loc)
-                if (epoch % 10 == 0):
+                if ((epoch+1) % 10 == 0):
                     self._plot_accuracy(train_accuracy, val_accuracy, epochs)
                     self._plot_loss(train_losses)
+                    self._plot_cross(train_true, train_pred, val_true, val_pred,
+                            epoch + 1)
             print(110*'-')
             train_end=time.time()
 
@@ -273,7 +280,7 @@ class OneHotMLP:
         return sum(weights)
 
 
-    def _validate_epoch(self, pred, labels):
+    def _validate_epoch(self, pred, labels, epoch):
         """Evaluates the training process.
 
         Arguments:
@@ -292,10 +299,17 @@ class OneHotMLP:
         correct = 0
         mistag = 0
 
+        index_true = []
+        index_pred = []
+
         for i in range(pred_onehot.shape[0]):
             # TODO
             equal = True
             # print(pred_onehot.shape[1])
+            if ((epoch + 1) % 10 == 0): 
+                index_true.append(np.argmax(labels[i]))
+                index_pred.append(np.argmax(pred_onehot[i]))
+            
             for j in range(pred_onehot.shape[1]):
                 if (pred_onehot[i][j] != labels[i][j]):
                     equal = False
@@ -303,7 +317,7 @@ class OneHotMLP:
                 correct += 1
             else:
                 mistag += 1
-        return correct, mistag
+        return correct, mistag, index_true, index_pred
 
     def _onehot(self, arr, length):
         # TODO
@@ -422,6 +436,7 @@ class OneHotMLP:
         plt.savefig(self.savedir + '/' + plt_name + '.eps')
         plt.clf()
 
+    
     def _plot_auc_dev(self, train_auc, val_auc, nepochs):
         """Plot ROC-AUC-Score development
         """
@@ -438,3 +453,19 @@ class OneHotMLP:
         plt.savefig(self.savedir + '/' + plt_name + '.png')
         plt.savefig(self.savedir + '/' + plt_name + '.eps')
         plt.clf()
+    
+    
+    def _plot_cross(self, t_true, t_pred, v_true, v_pred, epoch):
+        print("Drawing scatter plot 1.")
+        plt.scatter(t_true, t_pred, s=6)
+        plt.savefig(self.cross_savedir + '/{}_train.pdf'.format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_train.eps'.format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_train.png'.format(epoch))
+        plt.clf()
+        print("Drawing scatter plot 2.")
+        plt.scatter(v_true, v_pred, s=6)
+        plt.savefig(self.cross_savedir + '/{}_validation.pdf'.format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_validation.eps'.format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_validation.png'.format(epoch))
+        plt.clf()
+        print("Done.")
