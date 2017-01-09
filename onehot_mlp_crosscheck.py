@@ -231,7 +231,7 @@ class OneHotMLP:
 
                 # monitor training
                 train_pre = sess.run(yy_, {x:train_data.x})
-                train_corr, train_mistag, train_true, train_pred = self._validate_epoch(train_pre,
+                train_corr, train_mistag, train_cross = self._validate_epoch(train_pre,
                         train_data.y, epoch)
                 print('train: {}'.format((train_corr, train_mistag)))
                 train_accuracy.append(train_corr / (train_corr + train_mistag))
@@ -240,7 +240,7 @@ class OneHotMLP:
                 # val_pre = sess.run(yy_, {x:val_data.x})
                 
                 val_pre = sess.run(yy_, {x:val_data.x})
-                val_corr, val_mistag, val_true, val_pred = self._validate_epoch(
+                val_corr, val_mistag, val_cross = self._validate_epoch(
                         val_pre, val_data.y, epoch)
                 print('validation: {}'.format((val_corr, val_mistag)))
                 val_accuracy.append(val_corr / (val_corr + val_mistag))
@@ -255,8 +255,7 @@ class OneHotMLP:
                 if ((epoch+1) % 10 == 0):
                     self._plot_accuracy(train_accuracy, val_accuracy, epochs)
                     self._plot_loss(train_losses)
-                    self._plot_cross(train_true, train_pred, val_true, val_pred,
-                            epoch + 1)
+                    self._plot_cross(train_cross, val_cross, epoch + 1)
             print(110*'-')
             train_end=time.time()
 
@@ -299,16 +298,18 @@ class OneHotMLP:
         correct = 0
         mistag = 0
 
-        index_true = []
-        index_pred = []
+        arr_cross = []
 
         for i in range(pred_onehot.shape[0]):
             # TODO
             equal = True
             # print(pred_onehot.shape[1])
             if ((epoch + 1) % 10 == 0): 
-                index_true.append(np.argmax(labels[i]))
-                index_pred.append(np.argmax(pred_onehot[i]))
+                arr_cross = np.zeros((self.out_size, self.out_size),
+                        dtype=np.int)
+                index_true = np.argmax(labels[i])
+                index_pred = np.argmax(pred_onehot[i])
+                arr_cross[index_true][index_pred] += 1
             
             for j in range(pred_onehot.shape[1]):
                 if (pred_onehot[i][j] != labels[i][j]):
@@ -317,7 +318,7 @@ class OneHotMLP:
                 correct += 1
             else:
                 mistag += 1
-        return correct, mistag, index_true, index_pred
+        return correct, mistag, arr_cross
 
     def _onehot(self, arr, length):
         # TODO
@@ -455,17 +456,30 @@ class OneHotMLP:
         plt.clf()
     
     
-    def _plot_cross(self, t_true, t_pred, v_true, v_pred, epoch):
-        print("Drawing scatter plot 1.")
-        plt.scatter(t_true, t_pred, s=6)
+    def _plot_cross(self, arr_train, arr_val, epoch):
+        # print("Drawing scatter plot 1.")
+        # print(t_true)
+        # print(t_pred)
+        # plt.scatter(t_true, t_pred, s=6)
+        # plt.hexbin(t_true, t_pred)
+        # plt.axis(t_true.min(), t_true.max(), t_pred.min(), t_pred.max())
+        x = np.linspace(0, self.out_size, self.out_size)
+        y = np.linspace(0, self.out_size, self.out_size)
+        xn, yn = np.meshgrid(x,y)
+        plt.pcolormesh(xn, yn, arr_train)
+        plt.colorbar()
         plt.savefig(self.cross_savedir + '/{}_train.pdf'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train.png'.format(epoch))
         plt.clf()
-        print("Drawing scatter plot 2.")
-        plt.scatter(v_true, v_pred, s=6)
+        # print("Drawing scatter plot 2.")
+        # plt.scatter(v_true, v_pred, s=6)
+        # plt.hexbin(v_true, v_pred)
+        # plt.axis(v_true.min(), v_true.max(), v_pred.min(), v_pred.max())
+        plt.pcolormesh(xn, yn, arr_val)
+        plt.colorbar()
         plt.savefig(self.cross_savedir + '/{}_validation.pdf'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation.png'.format(epoch))
         plt.clf()
-        print("Done.")
+        # print("Done.")
