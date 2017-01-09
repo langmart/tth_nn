@@ -7,18 +7,18 @@ from data_frame_oneHot import DataFrame
 path = '/storage/7/lang/nn_data/converted/'
 outpath = 'data/executed/'
 print('Loading data...')
-train = np.load(path + 'even1_bdt_evt_jets_weights.npy')
-val = np.load(path + 'odd1_bdt_evt_jets_weights.npy')
+train = np.load(path + 'even3_bdt_evt_jets_weights.npy')
+val = np.load(path + 'odd3_bdt_evt_jets_weights.npy')
 print('done.')
 
 # print(train[0])
 
-beta = 0.0
+beta = 1e-8
 outsize = 6
-N_EPOCHS = 1000
-learning_rate = 5e-8
-hidden_layers = [500, 500, 500]
-exec_name = 'nn_models/3x500_bdt_evt_jets_xentropy'
+N_EPOCHS = 2000
+learning_rate = 1e-7
+hidden_layers = [300,300]
+exec_name = 'nn_models/2x300_testing'
 train = DataFrame(train, out_size=outsize)
 val = DataFrame(val, out_size=outsize)
 

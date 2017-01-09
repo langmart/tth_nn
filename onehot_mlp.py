@@ -145,9 +145,9 @@ class OneHotMLP:
 
         out = tf.matmul(layer, W[-1]) + B[-1]
         # return tf.nn.softplus(out)
-        # return tf.nn.sigmoid(out)
-        return tf.nn.relu(out)
-
+        return tf.nn.sigmoid(out)
+        # return tf.nn.relu(out)
+        # return out
 
     def train(self, train_data, val_data, epochs = 10, batch_size = 100,
             learning_rate = 1e-3, keep_prob = 0.9, beta = 0.0, out_size=1):
