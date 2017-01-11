@@ -203,8 +203,9 @@ class GetBranches:
             for event in range(structured_array.shape[0]):
                 keep_events.append(event)
                 keep_dict['data'].append(data_dict['data'][event])
-                # keep_dict['weights'].append(data_dict['weights'][event] * 100.0)
-                keep_dict['weights'].append([1.0 / n_sig_events])
+                keep_dict['weights'].append(data_dict['weights'][event] * 1.0 /
+                        n_sig_events)
+                # keep_dict['weights'].append([1.0 / n_sig_events])
                 siglab = signal_label()
                 keep_dict['labels'].append(siglab)
             print('    Signal data: {}'.format(len(keep_dict['labels'])))
@@ -223,9 +224,9 @@ class GetBranches:
                     if self._check_category(TTPlusBB, TTPlusCC, category):
                         keep_events.append(event)
                         keep_dict['data'].append(data_dict['data'][event])
-                        # keep_dict['weights'].append(data_dict['weights'][event]
-                        #         * numbers[i] / bg_total)
-                        keep_dict['weights'].append([1.0 / numbers[i]])
+                        keep_dict['weights'].append(data_dict['weights'][event]
+                                * 1.0 / numbers[i])
+                        # keep_dict['weights'].append([1.0 / numbers[i]])
                         bglab = bg_label(category)
                         keep_dict['labels'].append(bglab)
                         count_dict[category] += 1
