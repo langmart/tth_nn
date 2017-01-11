@@ -8,6 +8,7 @@ import tensorflow as tf
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 import numpy as np
 import os
 import sys
@@ -188,10 +189,12 @@ class OneHotMLP:
             yy_ = self._model(x, weights, biases)
             # loss function
             # xentropy = - (tf.mul(y, tf.log(y_ + 1e-10)) + tf.mul(1-y, tf.log(1-y_ + 1e-10)))
-            xentropy = tf.reduce_sum(tf.mul( - y, tf.log(y_ + 1e-10)))
+            # xentropy = tf.reduce_sum(tf.mul( - y, tf.log(y_ + 1e-10)))
             # l2_reg = 0.0
             l2_reg = beta * self._l2_regularization(weights)
-            loss = tf.reduce_mean(tf.mul(w, xentropy)) + l2_reg
+            loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(y_,
+                y))
+            # loss = tf.reduce_mean(tf.mul(w, xentropy)) + l2_reg
             # loss = tf.reduce_mean(np.sum(np.square(np.subtract(y,y_))))
             # optimizer
             train_step = tf.train.AdamOptimizer(learning_rate).minimize(loss)
@@ -298,15 +301,12 @@ class OneHotMLP:
         correct = 0
         mistag = 0
 
-        arr_cross = []
-
+        arr_cross = np.zeros((self.out_size, self.out_size),dtype=np.int)
         for i in range(pred_onehot.shape[0]):
             # TODO
             equal = True
             # print(pred_onehot.shape[1])
             if ((epoch + 1) % 10 == 0): 
-                arr_cross = np.zeros((self.out_size, self.out_size),
-                        dtype=np.int)
                 index_true = np.argmax(labels[i])
                 index_pred = np.argmax(pred_onehot[i])
                 arr_cross[index_true][index_pred] += 1
@@ -463,11 +463,39 @@ class OneHotMLP:
         # plt.scatter(t_true, t_pred, s=6)
         # plt.hexbin(t_true, t_pred)
         # plt.axis(t_true.min(), t_true.max(), t_pred.min(), t_pred.max())
-        x = np.linspace(0, self.out_size, self.out_size)
-        y = np.linspace(0, self.out_size, self.out_size)
+        arr_train_float = np.zeros((arr_train.shape[0], arr_train.shape[1]),
+            dtype = np.float32)
+        arr_val_float = np.zeros((arr_val.shape[0], arr_val.shape[1]), dtype =
+                np.float32)
+        for i in range(arr_train.shape[0]):
+            row_sum = 0
+            for j in range(arr_train.shape[1]):
+                row_sum += arr_train[i][j]
+            for j in range(arr_train.shape[1]):
+                arr_train_float[i][j] = arr_train[i][j] / row_sum
+        for i in range(arr_val.shape[0]):
+            row_sum = 0
+            for j in range(arr_val.shape[1]):
+                row_sum += arr_val[i][j]
+            for j in range(arr_val.shape[1]):
+                arr_val_float[i][j] = arr_val[i][j] / row_sum
+        print(arr_train)
+        x = np.linspace(0, self.out_size, self.out_size + 1)
+        y = np.linspace(0, self.out_size, self.out_size + 1)
         xn, yn = np.meshgrid(x,y)
-        plt.pcolormesh(xn, yn, arr_train)
+        plt.pcolormesh(xn, yn, arr_train_float)
         plt.colorbar()
+        plt.xlim(0, self.out_size)
+        plt.ylim(0, self.out_size)
+        plt.xlabel("Predicted")
+        plt.ylabel("True")
+        labels = ['ttH', 'tt + bb', 'tt + 2b', 'tt + b', 'tt + cc', 'tt + light']
+        ax = plt.gca()
+        ax.set_xticks(np.arange((x.shape[0] - 1)) + 0.5, minor=False)
+        ax.set_yticks(np.arange((y.shape[0] - 1)) + 0.5, minor=False)
+        ax.set_xticklabels(labels)
+        ax.set_yticklabels(labels)
+        plt.title("Heatmap: Training")
         plt.savefig(self.cross_savedir + '/{}_train.pdf'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train.png'.format(epoch))
@@ -476,8 +504,18 @@ class OneHotMLP:
         # plt.scatter(v_true, v_pred, s=6)
         # plt.hexbin(v_true, v_pred)
         # plt.axis(v_true.min(), v_true.max(), v_pred.min(), v_pred.max())
-        plt.pcolormesh(xn, yn, arr_val)
+        plt.pcolormesh(xn, yn, arr_val_float)
         plt.colorbar()
+        plt.xlim(0, self.out_size)
+        plt.ylim(0, self.out_size)
+        plt.xlabel("Predicted")
+        plt.ylabel("True")
+        ax = plt.gca()
+        ax.set_xticks(np.arange((x.shape[0] - 1)) + 0.5, minor=False)
+        ax.set_yticks(np.arange((y.shape[0] - 1)) + 0.5, minor=False)
+        ax.set_xticklabels(labels)
+        ax.set_yticklabels(labels)
+        plt.title("Heatmap: Validation")
         plt.savefig(self.cross_savedir + '/{}_validation.pdf'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation.png'.format(epoch))
