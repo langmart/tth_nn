@@ -503,7 +503,7 @@ class OneHotMLP:
         plt.ylim(0, self.out_size)
         plt.xlabel("Predicted")
         plt.ylabel("True")
-        labels = ['ttH', 'tt + bb', 'tt + 2b', 'tt + b', 'tt + cc', 'tt + light']
+        labels = ['ttH', 'tt + bb', 'tt + light']
         ax = plt.gca()
         ax.set_xticks(np.arange((x.shape[0] - 1)) + 0.5, minor=False)
         ax.set_yticks(np.arange((y.shape[0] - 1)) + 0.5, minor=False)
