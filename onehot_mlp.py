@@ -8,10 +8,12 @@ import tensorflow as tf
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 import numpy as np
 import os
 import sys
 import time
+import pickle
 
 # from sklearn.metrics import roc_auc_score, roc_curve
 
@@ -62,6 +64,10 @@ class OneHotMLP:
         # create directory if necessary
         if not os.path.isdir(self.savedir):
             os.makedirs(self.savedir)
+        
+        self.cross_savedir = self.savedir + '/cross_checks'
+        if not os.path.isdir(self.cross_savedir):
+            os.makedirs(self.cross_savedir)
 
 
     def _get_parameters(self):
@@ -184,7 +190,8 @@ class OneHotMLP:
             yy_ = self._model(x, weights, biases)
             # loss function
             # xentropy = - (tf.mul(y, tf.log(y_ + 1e-10)) + tf.mul(1-y, tf.log(1-y_ + 1e-10)))
-            xentropy = tf.reduce_sum(tf.mul( - y, tf.log(y_ + 1e-10)))
+            # xentropy = tf.reduce_sum(tf.mul( - y, tf.log(y_ + 1e-10)))
+            xentropy = tf.nn.softmax_cross_entropy_with_logits(y,y_)
             # l2_reg = 0.0
             l2_reg = beta * self._l2_regularization(weights)
             loss = tf.reduce_mean(tf.mul(w, xentropy)) + l2_reg
@@ -214,6 +221,8 @@ class OneHotMLP:
                 'Training Accuracy', 'Validation Accuracy'))
             print(110*'-')
 
+            cross_train_list = []
+            cross_val_list = []
             for epoch in range(epochs):
                 total_batches = int(train_data.n/batch_size)
                 epoch_loss = 0
@@ -227,29 +236,35 @@ class OneHotMLP:
 
                 # monitor training
                 train_pre = sess.run(yy_, {x:train_data.x})
-                train_corr, train_mistag = self._validate_epoch(train_pre,
-                        train_data.y)
+                train_corr, train_mistag, train_cross = self._validate_epoch( 
+                        train_pre, train_data.y, epoch)
                 print('train: {}'.format((train_corr, train_mistag)))
                 train_accuracy.append(train_corr / (train_corr + train_mistag))
-                # roc_curve not yet working
-                # train_auc.append(roc_auc_score(train_data.y, train_pre))
-                # val_pre = sess.run(yy_, {x:val_data.x})
                 
                 val_pre = sess.run(yy_, {x:val_data.x})
-                val_corr, val_mistag = self._validate_epoch(val_pre, val_data.y)
+                #         val_pre, val_data.y, epoch)
+                val_corr, val_mistag, val_cross = self._validate_epoch(val_pre,
+                        val_data.y, epoch)
                 print('validation: {}'.format((val_corr, val_mistag)))
                 val_accuracy.append(val_corr / (val_corr + val_mistag))
                 
                 
-                # roc_curve not yet working
-                # val_auc.append(roc_auc_score(val_data.y, val_pre))
-                # print('{:^25} | {:^25.4f} | {:^25.4f} | {:^25.4f}'.format(epoch+1, train_losses[-1], train_auc[-1], val_auc[-1]))
                 print('{:^25} | {:^25.4f} | {:^25.4f} | {:^25.4f}'.format(epoch + 1, 
                     train_losses[-1], train_accuracy[-1], val_accuracy[-1]))
                 saver.save(sess, self.model_loc)
-                if (epoch % 10 == 0):
+                cross_train_list.append(train_cross)
+                cross_val_list.append(val_cross)
+                self._plot_cross(train_cross, val_cross, epoch + 1)
+
+                if ((epoch+1) % 10 == 0):
                     self._plot_accuracy(train_accuracy, val_accuracy, epochs)
                     self._plot_loss(train_losses)
+                    self._write_list(cross_train_list, 'train_cross')
+                    self._write_list(cross_val_list, 'val_cross')
+                    self._write_list(train_losses, 'train_losses')
+                    self._write_list(train_accuracy, 'train_accuracy')
+                    self._write_list(val_accuracy, 'val_accuracy')
+
             print(110*'-')
             train_end=time.time()
 
@@ -260,6 +275,11 @@ class OneHotMLP:
             self.trained = True
             self._write_parameters(epochs, batch_size, keep_prob, beta,
                     (train_end - train_start) / 60)
+            self._write_list(cross_train_list, 'train_cross')
+            self._write_list(cross_val_list, 'val_cross')
+            self._write_list(train_losses, 'train_losses')
+            self._write_list(train_accuracy, 'train_accuracy')
+            self._write_list(val_accuracy, 'val_accuracy')
 
             print('Model saved in: \n{}'.format(self.savedir))
 
@@ -273,7 +293,7 @@ class OneHotMLP:
         return sum(weights)
 
 
-    def _validate_epoch(self, pred, labels):
+    def _validate_epoch(self, pred, labels, epoch):
         """Evaluates the training process.
 
         Arguments:
@@ -292,10 +312,18 @@ class OneHotMLP:
         correct = 0
         mistag = 0
 
+        arr_cross = np.zeros((self.out_size, self.out_size),dtype=np.int)
         for i in range(pred_onehot.shape[0]):
             # TODO
             equal = True
             # print(pred_onehot.shape[1])
+            # if ((epoch + 1) % 10 == 0): 
+            #     index_true = np.argmax(labels[i])
+            #     index_pred = np.argmax(pred_onehot[i])
+            #     arr_cross[index_true][index_pred] += 1
+            index_true = np.argmax(labels[i])
+            index_pred = np.argmax(pred_onehot[i])
+            arr_cross[index_true][index_pred] += 1
             for j in range(pred_onehot.shape[1]):
                 if (pred_onehot[i][j] != labels[i][j]):
                     equal = False
@@ -303,7 +331,7 @@ class OneHotMLP:
                 correct += 1
             else:
                 mistag += 1
-        return correct, mistag
+        return correct, mistag, arr_cross
 
     def _onehot(self, arr, length):
         # TODO
@@ -438,3 +466,80 @@ class OneHotMLP:
         plt.savefig(self.savedir + '/' + plt_name + '.png')
         plt.savefig(self.savedir + '/' + plt_name + '.eps')
         plt.clf()
+
+
+    def _plot_cross(self, arr_train, arr_val, epoch):
+        # print("Drawing scatter plot 1.")
+        # print(t_true)
+        # print(t_pred)
+        # plt.scatter(t_true, t_pred, s=6)
+        # plt.hexbin(t_true, t_pred)
+        # plt.axis(t_true.min(), t_true.max(), t_pred.min(), t_pred.max())
+        arr_train_float = np.zeros((arr_train.shape[0], arr_train.shape[1]),
+            dtype = np.float32)
+        arr_val_float = np.zeros((arr_val.shape[0], arr_val.shape[1]), dtype =
+                np.float32)
+        for i in range(arr_train.shape[0]):
+            row_sum = 0
+            for j in range(arr_train.shape[1]):
+                row_sum += arr_train[i][j]
+            for j in range(arr_train.shape[1]):
+                arr_train_float[i][j] = arr_train[i][j] / row_sum
+        for i in range(arr_val.shape[0]):
+            row_sum = 0
+            for j in range(arr_val.shape[1]):
+                row_sum += arr_val[i][j]
+            for j in range(arr_val.shape[1]):
+                arr_val_float[i][j] = arr_val[i][j] / row_sum
+        print(arr_train)
+        print('-----------------')
+        print(arr_val)
+        x = np.linspace(0, self.out_size, self.out_size + 1)
+        y = np.linspace(0, self.out_size, self.out_size + 1)
+        xn, yn = np.meshgrid(x,y)
+        plt.pcolormesh(xn, yn, arr_train_float)
+        plt.colorbar()
+        plt.xlim(0, self.out_size)
+        plt.ylim(0, self.out_size)
+        plt.xlabel("Predicted")
+        plt.ylabel("True")
+        labels = ['ttH', 'tt + bb', 'tt + 2b', 'tt + b', 'tt + cc', 'tt + light']
+        ax = plt.gca()
+        ax.set_xticks(np.arange((x.shape[0] - 1)) + 0.5, minor=False)
+        ax.set_yticks(np.arange((y.shape[0] - 1)) + 0.5, minor=False)
+        ax.set_xticklabels(labels)
+        ax.set_yticklabels(labels)
+        plt.title("Heatmap: Training")
+        plt.savefig(self.cross_savedir + '/{}_train.pdf'.format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_train.eps'.format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_train.png'.format(epoch))
+        plt.clf()
+        # print("Drawing scatter plot 2.")
+        # plt.scatter(v_true, v_pred, s=6)
+        # plt.hexbin(v_true, v_pred)
+        # plt.axis(v_true.min(), v_true.max(), v_pred.min(), v_pred.max())
+        plt.pcolormesh(xn, yn, arr_val_float)
+        plt.colorbar()
+        plt.xlim(0, self.out_size)
+        plt.ylim(0, self.out_size)
+        plt.xlabel("Predicted")
+        plt.ylabel("True")
+        ax = plt.gca()
+        ax.set_xticks(np.arange((x.shape[0] - 1)) + 0.5, minor=False)
+        ax.set_yticks(np.arange((y.shape[0] - 1)) + 0.5, minor=False)
+        ax.set_xticklabels(labels)
+        ax.set_yticklabels(labels)
+        plt.title("Heatmap: Validation")
+        plt.savefig(self.cross_savedir + '/{}_validation.pdf'.format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_validation.eps'.format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_validation.png'.format(epoch))
+        plt.clf()
+        # print("Done.")
+
+
+    def _write_list(self, outlist, name):
+        """Writes a list of arrays into a name.txt file."""
+        path = self.cross_savedir + '/' + name + '.txt'
+
+        with open(path, 'wb') as out:
+            pickle.dump(outlist, out)
