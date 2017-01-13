@@ -13,6 +13,7 @@ import numpy as np
 import os
 import sys
 import time
+import pickle
 
 # from sklearn.metrics import roc_auc_score, roc_curve
 
@@ -150,9 +151,9 @@ class OneHotMLP:
 
         out = tf.matmul(layer, W[-1]) + B[-1]
         # return tf.nn.softplus(out)
-        return tf.nn.sigmoid(out)
+        # return tf.nn.sigmoid(out)
         # return tf.nn.relu(out)
-        # return out
+        return out
 
     def train(self, train_data, val_data, epochs = 10, batch_size = 100,
             learning_rate = 1e-3, keep_prob = 0.9, beta = 0.0, out_size=1):
@@ -188,17 +189,21 @@ class OneHotMLP:
             y_ = self._model(x, weights, biases, keep_prob)
             yy_ = self._model(x, weights, biases)
             # loss function
-            # xentropy = - (tf.mul(y, tf.log(y_ + 1e-10)) + tf.mul(1-y, tf.log(1-y_ + 1e-10)))
+            # xentropy = - tf.reduce_sum((tf.mul(y, tf.log(y_ + 1e-10)) +
+            #     tf.mul(1-y, tf.log(1-y_ + 1e-10))))
             # xentropy = tf.reduce_sum(tf.mul( - y, tf.log(y_ + 1e-10)))
             # l2_reg = 0.0
+            # xentropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(y_, y))
             l2_reg = beta * self._l2_regularization(weights)
-            loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(y_,
-                y))
+            loss = tf.reduce_mean(- tf.nn.softmax_cross_entropy_with_logits(y,
+                y_)) + l2_reg
+            # loss = tf.reduce_mean(tf.mul(w,
+            #     tf.nn.softmax_cross_entropy_with_logits(y_, y))) + l2_reg
             # loss = tf.reduce_mean(tf.mul(w, xentropy)) + l2_reg
-            # loss = tf.reduce_mean(np.sum(np.square(np.subtract(y,y_))))
+            # loss = tf.reduce_mean(np.sum(np.square(np.subtract(y,y_)))) + l2_reg
             # optimizer
             train_step = tf.train.AdamOptimizer(learning_rate).minimize(loss)
-
+            # train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
 
             # initialize all variables
             init = tf.initialize_all_variables()
@@ -221,6 +226,9 @@ class OneHotMLP:
                 'Training Accuracy', 'Validation Accuracy'))
             print(110*'-')
 
+            cross_train_list = []
+            cross_val_list = []
+
             for epoch in range(epochs):
                 total_batches = int(train_data.n/batch_size)
                 epoch_loss = 0
@@ -233,32 +241,36 @@ class OneHotMLP:
                 train_data.shuffle()
 
                 # monitor training
+                # train_pre = sess.run(yy_, {x:train_data.x})
                 train_pre = sess.run(yy_, {x:train_data.x})
-                train_corr, train_mistag, train_cross = self._validate_epoch(train_pre,
-                        train_data.y, epoch)
+                #         train_data.y, epoch)
+                train_corr, train_mistag, train_cross = self._validate_epoch( 
+                        train_pre, train_data.y, epoch)
                 print('train: {}'.format((train_corr, train_mistag)))
                 train_accuracy.append(train_corr / (train_corr + train_mistag))
-                # roc_curve not yet working
-                # train_auc.append(roc_auc_score(train_data.y, train_pre))
-                # val_pre = sess.run(yy_, {x:val_data.x})
                 
                 val_pre = sess.run(yy_, {x:val_data.x})
-                val_corr, val_mistag, val_cross = self._validate_epoch(
-                        val_pre, val_data.y, epoch)
+                #         val_pre, val_data.y, epoch)
+                val_corr, val_mistag, val_cross = self._validate_epoch(val_pre,
+                        val_data.y, epoch)
                 print('validation: {}'.format((val_corr, val_mistag)))
                 val_accuracy.append(val_corr / (val_corr + val_mistag))
                 
                 
-                # roc_curve not yet working
-                # val_auc.append(roc_auc_score(val_data.y, val_pre))
-                # print('{:^25} | {:^25.4f} | {:^25.4f} | {:^25.4f}'.format(epoch+1, train_losses[-1], train_auc[-1], val_auc[-1]))
                 print('{:^25} | {:^25.4f} | {:^25.4f} | {:^25.4f}'.format(epoch + 1, 
                     train_losses[-1], train_accuracy[-1], val_accuracy[-1]))
                 saver.save(sess, self.model_loc)
+                cross_train_list.append(train_cross)
+                cross_val_list.append(val_cross)
+                self._plot_cross(train_cross, val_cross, epoch + 1)
                 if ((epoch+1) % 10 == 0):
                     self._plot_accuracy(train_accuracy, val_accuracy, epochs)
                     self._plot_loss(train_losses)
-                    self._plot_cross(train_cross, val_cross, epoch + 1)
+                    self._write_list(cross_train_list, 'train_cross')
+                    self._write_list(cross_val_list, 'val_cross')
+                    self._write_list(train_losses, 'train_losses')
+                    self._write_list(train_accuracy, 'train_accuracy')
+                    self._write_list(val_accuracy, 'val_accuracy')
             print(110*'-')
             train_end=time.time()
 
@@ -269,7 +281,7 @@ class OneHotMLP:
             self.trained = True
             self._write_parameters(epochs, batch_size, keep_prob, beta,
                     (train_end - train_start) / 60)
-
+            
             print('Model saved in: \n{}'.format(self.savedir))
 
 
@@ -306,10 +318,13 @@ class OneHotMLP:
             # TODO
             equal = True
             # print(pred_onehot.shape[1])
-            if ((epoch + 1) % 10 == 0): 
-                index_true = np.argmax(labels[i])
-                index_pred = np.argmax(pred_onehot[i])
-                arr_cross[index_true][index_pred] += 1
+            # if ((epoch + 1) % 10 == 0): 
+            #     index_true = np.argmax(labels[i])
+            #     index_pred = np.argmax(pred_onehot[i])
+            #     arr_cross[index_true][index_pred] += 1
+            index_true = np.argmax(labels[i])
+            index_pred = np.argmax(pred_onehot[i])
+            arr_cross[index_true][index_pred] += 1
             
             for j in range(pred_onehot.shape[1]):
                 if (pred_onehot[i][j] != labels[i][j]):
@@ -332,7 +347,7 @@ class OneHotMLP:
                     arr2[j] = 0.0
             arr[i] = arr2
         return arr
-
+        
 
 
     def _write_parameters(self, epochs, batch_size, keep_prob, beta, time):
@@ -480,6 +495,8 @@ class OneHotMLP:
             for j in range(arr_val.shape[1]):
                 arr_val_float[i][j] = arr_val[i][j] / row_sum
         print(arr_train)
+        print('-----------------')
+        print(arr_val)
         x = np.linspace(0, self.out_size, self.out_size + 1)
         y = np.linspace(0, self.out_size, self.out_size + 1)
         xn, yn = np.meshgrid(x,y)
@@ -521,3 +538,11 @@ class OneHotMLP:
         plt.savefig(self.cross_savedir + '/{}_validation.png'.format(epoch))
         plt.clf()
         # print("Done.")
+
+
+    def _write_list(self, outlist, name):
+        """Writes a list of arrays into a name.txt file."""
+        path = self.cross_savedir + '/' + name + '.txt'
+
+        with open(path, 'wb') as out:
+            pickle.dump(outlist, out)
