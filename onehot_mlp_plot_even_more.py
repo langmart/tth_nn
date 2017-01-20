@@ -237,6 +237,10 @@ class OneHotMLP:
             train_auc = []
             val_auc = []
             train_losses = []
+            train_cats = []
+            val_cats = []
+
+
 
             print(110*'-')
             print('Train model: {}'.format(self.model_loc))
@@ -262,14 +266,14 @@ class OneHotMLP:
 
                 # monitor training
                 train_pre = sess.run(yy_, {x:train_data.x})
-                train_corr, train_mistag, train_cross = self._validate_epoch( 
+                train_corr, train_mistag, train_cross, train_cat = self._validate_epoch( 
                         train_pre, train_data.y, epoch)
                 print('train: {}'.format((train_corr, train_mistag)))
                 train_accuracy.append(train_corr / (train_corr + train_mistag))
                 
                 val_pre = sess.run(yy_, {x:val_data.x})
                 #         val_pre, val_data.y, epoch)
-                val_corr, val_mistag, val_cross = self._validate_epoch(val_pre,
+                val_corr, val_mistag, val_cross, val_cat = self._validate_epoch(val_pre,
                         val_data.y, epoch)
                 print('validation: {}'.format((val_corr, val_mistag)))
                 val_accuracy.append(val_corr / (val_corr + val_mistag))
@@ -280,11 +284,14 @@ class OneHotMLP:
                 saver.save(sess, self.model_loc)
                 cross_train_list.append(train_cross)
                 cross_val_list.append(val_cross)
+                train_cats.append(train_cat)
+                val_cats.append(val_cat)
                 self._plot_cross(train_cross, val_cross, epoch + 1)
                 self._plot_hists(train_pre, val_pre, epoch)
 
                 if ((epoch+1) % 10 == 0):
-                    self._plot_accuracy(train_accuracy, val_accuracy, epochs)
+                    self._plot_accuracy(train_accuracy, val_accuracy, train_cats,
+                            val_cats, epochs)
                     self._plot_loss(train_losses)
                     self._write_list(cross_train_list, 'train_cross')
                     self._write_list(cross_val_list, 'val_cross')
@@ -297,7 +304,8 @@ class OneHotMLP:
 
             # self._validation(val_pre, val_data.y)
             # self._plot_auc_dev(train_auc, val_auc, epochs)
-            self._plot_accuracy(train_accuracy, val_accuracy, epochs)
+            self._plot_accuracy(train_accuracy, val_accuracy, train_cats,
+                    val_cats, epochs)
             self._plot_loss(train_losses)
             self._write_parameters(epochs, batch_size, keep_prob, beta,
                     (train_end - train_start) / 60)
@@ -362,9 +370,14 @@ class OneHotMLP:
                 correct += 1
             else:
                 mistag += 1
+        cat_acc = np.zeros((self.out_size), dtype=np.float32)
+        for i in range(self.out_size): 
+            cat_acc[i] = arr_cross[i][i] / np.sum(arr_cross, axis=1)
 
         
-        return correct, mistag, arr_cross
+        return correct, mistag, arr_cross, cat_acc
+
+
 
     def _onehot(self, arr, length):
         # TODO
@@ -467,7 +480,7 @@ class OneHotMLP:
         plt.clf()
 
 
-    def _plot_accuracy(self, train_accuracy, val_accuracy, epochs):
+    def _plot_accuracy(self, train_accuracy, val_accuracy, train_cats, val_cats, epochs):
         """Plot the training and validation accuracies.
         """
         plt.plot(train_accuracy, color = 'red', label='Training accuracy')
@@ -478,11 +491,34 @@ class OneHotMLP:
         plt.legend(loc='best')
         plt.grid(True)
         plt_name = self.name + '_accuracy'
-        
         plt.savefig(self.savedir + '/' + plt_name + '.pdf')
         plt.savefig(self.savedir + '/' + plt_name + '.png')
         plt.savefig(self.savedir + '/' + plt_name + '.eps')
         plt.clf()
+        
+        plt.plot(train_cats)
+        plt.xlabel('Epoch')
+        plt.ylabel('Accuracy')
+        plt.title('Categories: Training Accuracy development')
+        plt.legend(loc='best')
+        plt.grid(True)
+        plt_name = self.name = '_categories_train'
+        plt.savefig(self.savedir + '/' + plt_name + '.pdf')
+        plt.savefig(self.savedir + '/' + plt_name + '.png')
+        plt.savefig(self.savedir + '/' + plt_name + '.eps')
+        plt.clf()
+        plt.plot(val_cats)
+        plt.xlabel('Epoch')
+        plt.ylabel('Accuracy')
+        plt.title('Categories: Validation Accuracy development')
+        plt.legend(loc='best')
+        plt.grid(True)
+        plt_name = self.name = '_categories_val'
+        plt.savefig(self.savedir + '/' + plt_name + '.pdf')
+        plt.savefig(self.savedir + '/' + plt_name + '.png')
+        plt.savefig(self.savedir + '/' + plt_name + '.eps')
+        plt.clf()
+
 
     def _plot_auc_dev(self, train_auc, val_auc, nepochs):
         """Plot ROC-AUC-Score development
