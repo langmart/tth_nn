@@ -28,6 +28,22 @@ class DataFrame:
         self.shuffle()
         print('done.')
 
+
+    def normalize(self):
+        """Normalizes the training data.
+        """
+
+        x_mean = np.mean(self.x, axis=0).astype(np.float32)
+        x_max = np.amax(self.x, axis=0).astype(np.float32)
+        x_min = np.amin(self.x, axis=0).astype(np.float32)
+
+
+        for i in range(self.x.shape[1]):
+            for j in range(self.x.shape[0]):
+                self.x[j,i] = 2.0 * (self.x[j,i] - x_mean[i]) / (x_max[i] - x_min[i])
+
+
+    
     def shuffle(self):
         """Shuffles the data.
         """

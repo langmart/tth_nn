@@ -25,7 +25,7 @@ class OneHotMLP:
     """
 
 
-    def __init__(self, n_features, h_layers, out_size, savedir):
+    def __init__(self, n_features, h_layers, out_size, savedir, labels_text):
         """Initializes the Classifier.
 
         Arguments:
@@ -54,6 +54,7 @@ class OneHotMLP:
         self.out_size = out_size
         self.name = savedir.rsplit('/')[-1]
         self.savedir = savedir
+        self.labels_text = labels_text
 
         # check whether the model file exists
         if os.path.exists(self.savedir + '/{}.ckpt'.format(self.name)):
@@ -68,6 +69,16 @@ class OneHotMLP:
         self.cross_savedir = self.savedir + '/cross_checks'
         if not os.path.isdir(self.cross_savedir):
             os.makedirs(self.cross_savedir)
+        
+        self.hists_savedir_train = self.cross_savedir + '/hists_train/'
+        if not os.path.isdir(self.hists_savedir_train):
+            os.makedirs(self.hists_savedir_train)
+        self.hists_savedir_val = self.cross_savedir + '/hists_val/'
+        if not os.path.isdir(self.hists_savedir_val):
+            os.makedirs(self.hists_savedir_val)
+        self.weights_savedir = self.cross_savedir + '/weights/'
+        if not os.path.isdir(self.weights_savedir):
+            os.makedirs(self.weights_savedir)
 
 
     def _get_parameters(self):
@@ -84,7 +95,8 @@ class OneHotMLP:
         n_features = self.n_features
         h_layers = self.h_layers
 
-        weights = [tf.Variable(tf.random_normal([n_features, h_layers[0]], stddev=tf.sqrt(2.0/n_features)), name = 'W_1')]
+        weights = [tf.Variable(tf.random_normal([n_features, h_layers[0]], 
+            stddev=tf.sqrt(2.0/n_features)), name = 'W_1')]
         # biases = [tf.Variable(tf.zeros([h_layers[0]]), name = 'B_1')]
         biases = [tf.Variable(tf.random_normal([h_layers[0]], stddev =
             tf.sqrt(2.0 / (h_layers[0]))), name = 'B_1')]
@@ -102,8 +114,10 @@ class OneHotMLP:
                 weights.append(tf.Variable(tf.random_normal([h_layers[i-1],
                     h_layers[i]], stddev = tf.sqrt(2.0 / h_layers[i-1])), name =
                     'W_{}'.format(i+1)))
-                biases.append(tf.Variable(tf.zeros([h_layers[i]]), name =
-                    'B_{}'.format(i+1)))
+                # biases.append(tf.Variable(tf.zeros([h_layers[i]]), name =
+                #     'B_{}'.format(i+1)))
+                biases.append(tf.Variable(tf.random_normal([h_layers[i]], stddev
+                    = tf.sqrt(2.0 / h_layers[i])), name = 'B_{}'.format(i+1)))
                 # weights.append(tf.Variable(tf.random_uniform([h_layers[i-1],
                 #     h_layers[i]], minval = 0.0, maxval = 1.0), name =
                 #     'W_{}'.format(i+1)))
@@ -113,7 +127,9 @@ class OneHotMLP:
         # connect the last hidden layer to the output layer
         weights.append(tf.Variable(tf.random_normal([h_layers[-1], self.out_size],
             stddev = tf.sqrt(2.0/h_layers[-1])), name = 'W_out'))
-        biases.append(tf.Variable(tf.zeros([self.out_size]), name = 'B_out'))
+        # biases.append(tf.Variable(tf.zeros([self.out_size]), name = 'B_out'))
+        biases.append(tf.Variable(tf.random_normal([self.out_size], stddev
+            = tf.sqrt(2.0 / self.out_size)), name = 'B_out'))
         # weights.append(tf.Variable(tf.random_uniform([h_layers[-1],
         #     self.out_size], minval = 0.0, maxval = 1.0), name = 'W_out'))
         # biases.append(tf.Variable(tf.random_uniform([self.out_size], minval =
@@ -151,9 +167,9 @@ class OneHotMLP:
 
         out = tf.matmul(layer, W[-1]) + B[-1]
         # return tf.nn.softplus(out)
-        return tf.nn.sigmoid(out)
+        # return tf.nn.sigmoid(out)
         # return tf.nn.relu(out)
-        # return out
+        return out
 
     def train(self, train_data, val_data, epochs = 10, batch_size = 100,
             learning_rate = 1e-3, keep_prob = 0.9, beta = 0.0, out_size=1):
@@ -191,10 +207,11 @@ class OneHotMLP:
             # loss function
             # xentropy = - (tf.mul(y, tf.log(y_ + 1e-10)) + tf.mul(1-y, tf.log(1-y_ + 1e-10)))
             # xentropy = tf.reduce_sum(tf.mul( - y, tf.log(y_ + 1e-10)))
-            xentropy = tf.nn.softmax_cross_entropy_with_logits(y,y_)
+            xentropy = tf.nn.softmax_cross_entropy_with_logits(y_,y)
             # l2_reg = 0.0
             l2_reg = beta * self._l2_regularization(weights)
-            loss = tf.reduce_mean(tf.mul(w, xentropy)) + l2_reg
+            # loss = tf.reduce_mean(tf.mul(w, xentropy)) + l2_reg
+            loss = tf.reduce_mean(tf.reduce_sum(tf.mul(w, xentropy))) + l2_reg
             # loss = tf.reduce_mean(np.sum(np.square(np.subtract(y,y_))))
             # optimizer
             train_step = tf.train.AdamOptimizer(learning_rate).minimize(loss)
@@ -213,6 +230,15 @@ class OneHotMLP:
             train_auc = []
             val_auc = []
             train_losses = []
+            train_cats = []
+            val_cats = []
+            print('Now normalizing training data.')
+            train_data.normalize()
+            print('Done.')
+            print('Now normalizing validation data.')
+            val_data.normalize()
+            print('Done.')
+
 
             print(110*'-')
             print('Train model: {}'.format(self.model_loc))
@@ -229,21 +255,23 @@ class OneHotMLP:
                 for _ in range(total_batches):
                     # train in batches
                     train_x, train_y, train_w=train_data.next_batch(batch_size)
-                    _, train_loss = sess.run([train_step, loss], {x:train_x, y:train_y, w:train_w})
+                    _, train_loss, weights_for_plot = sess.run([train_step,
+                        loss, weights], {x:train_x, y:train_y, w:train_w})
                     epoch_loss += train_loss
+                self._plot_weight_matrices(weights, epoch)
                 train_losses.append(np.mean(epoch_loss))
                 train_data.shuffle()
 
                 # monitor training
                 train_pre = sess.run(yy_, {x:train_data.x})
-                train_corr, train_mistag, train_cross = self._validate_epoch( 
+                train_corr, train_mistag, train_cross, train_cat = self._validate_epoch( 
                         train_pre, train_data.y, epoch)
                 print('train: {}'.format((train_corr, train_mistag)))
                 train_accuracy.append(train_corr / (train_corr + train_mistag))
                 
                 val_pre = sess.run(yy_, {x:val_data.x})
                 #         val_pre, val_data.y, epoch)
-                val_corr, val_mistag, val_cross = self._validate_epoch(val_pre,
+                val_corr, val_mistag, val_cross, val_cat = self._validate_epoch(val_pre,
                         val_data.y, epoch)
                 print('validation: {}'.format((val_corr, val_mistag)))
                 val_accuracy.append(val_corr / (val_corr + val_mistag))
@@ -254,25 +282,29 @@ class OneHotMLP:
                 saver.save(sess, self.model_loc)
                 cross_train_list.append(train_cross)
                 cross_val_list.append(val_cross)
+                train_cats.append(train_cat)
+                val_cats.append(val_cat)
                 self._plot_cross(train_cross, val_cross, epoch + 1)
+                self._plot_hists(train_pre, val_pre, epoch)
 
                 if ((epoch+1) % 10 == 0):
-                    self._plot_accuracy(train_accuracy, val_accuracy, epochs)
                     self._plot_loss(train_losses)
                     self._write_list(cross_train_list, 'train_cross')
                     self._write_list(cross_val_list, 'val_cross')
                     self._write_list(train_losses, 'train_losses')
                     self._write_list(train_accuracy, 'train_accuracy')
                     self._write_list(val_accuracy, 'val_accuracy')
+                    self._plot_accuracy(train_accuracy, val_accuracy, train_cats,
+                            val_cats, epochs)
 
             print(110*'-')
             train_end=time.time()
 
             # self._validation(val_pre, val_data.y)
             # self._plot_auc_dev(train_auc, val_auc, epochs)
-            self._plot_accuracy(train_accuracy, val_accuracy, epochs)
+            self._plot_accuracy(train_accuracy, val_accuracy, train_cats,
+                    val_cats, epochs)
             self._plot_loss(train_losses)
-            self.trained = True
             self._write_parameters(epochs, batch_size, keep_prob, beta,
                     (train_end - train_start) / 60)
             self._write_list(cross_train_list, 'train_cross')
@@ -280,6 +312,7 @@ class OneHotMLP:
             self._write_list(train_losses, 'train_losses')
             self._write_list(train_accuracy, 'train_accuracy')
             self._write_list(val_accuracy, 'val_accuracy')
+            self.trained = True
 
             print('Model saved in: \n{}'.format(self.savedir))
 
@@ -289,8 +322,10 @@ class OneHotMLP:
         for L2 regularization.
         """
         # Applies tf.nn.l2_loss to all elements of weights
-        weights = map(lambda x: tf.nn.l2_loss(x), weights)
-        return sum(weights)
+        # weights = map(lambda x: tf.nn.l2_loss(x), weights)
+        # return sum(weights)
+        losses = [tf.nn.l2_loss(w) for w in weights]
+        return tf.add_n(losses)
 
 
     def _validate_epoch(self, pred, labels, epoch):
@@ -302,7 +337,8 @@ class OneHotMLP:
             Predictions made by the model for the data fed into it.
         labels (np.array):
             Labels of the validation dataset.
-
+        epoch (int):
+            Training epoch.
         Returns:
         ----------------
 
@@ -331,20 +367,28 @@ class OneHotMLP:
                 correct += 1
             else:
                 mistag += 1
-        return correct, mistag, arr_cross
+        cat_acc = np.zeros((self.out_size), dtype=np.float32)
+        for i in range(self.out_size): 
+            cat_acc[i] = arr_cross[i][i] / (np.sum(arr_cross, axis=1)[i])
+
+        
+        return correct, mistag, arr_cross, cat_acc
+
+
 
     def _onehot(self, arr, length):
         # TODO
+        dummy_array = arr
         for i in range(arr.shape[0]):
-            arr2 = arr[i]
+            arr2 = dummy_array[i]
             ind = np.argmax(arr2)
             for j in range(arr2.shape[0]):
                 if (j == ind):
                     arr2[j] = 1.0
                 else:
                     arr2[j] = 0.0
-            arr[i] = arr2
-        return arr
+            dummy_array[i] = arr2
+        return dummy_array
 
 
 
@@ -403,7 +447,7 @@ class OneHotMLP:
             for weight in weights:
                 w.append(sess.run(weight))
             # TODO: plot all weights, not just first layer
-            self._plot_weight(w[0], branches)
+            self._plot_weights(w[0], branches)
 
 
     def _plot_weights(self, weight, branches):
@@ -413,7 +457,7 @@ class OneHotMLP:
         plt.xticks(x_pos, branches, rotation = 30, ha = 'right')
         plt.tight_layout()
         plt.grid(True)
-        plt.savefig('weight0.pdf')
+        plt.savefig(self.weights_savedir + 'weight0.pdf')
         plt.show()
         plt.clf()
 
@@ -433,7 +477,7 @@ class OneHotMLP:
         plt.clf()
 
 
-    def _plot_accuracy(self, train_accuracy, val_accuracy, epochs):
+    def _plot_accuracy(self, train_accuracy, val_accuracy, train_cats, val_cats, epochs):
         """Plot the training and validation accuracies.
         """
         plt.plot(train_accuracy, color = 'red', label='Training accuracy')
@@ -444,11 +488,44 @@ class OneHotMLP:
         plt.legend(loc='best')
         plt.grid(True)
         plt_name = self.name + '_accuracy'
-        
         plt.savefig(self.savedir + '/' + plt_name + '.pdf')
         plt.savefig(self.savedir + '/' + plt_name + '.png')
         plt.savefig(self.savedir + '/' + plt_name + '.eps')
         plt.clf()
+        
+        arr = np.zeros((self.out_size, len(train_cats)))
+        for i in range(len(train_cats)):
+            for j in range(self.out_size):
+                arr[j][i] = train_cats[i][j]
+        for j in range(self.out_size):
+            plt.plot(arr[j], label = self.labels_text[j])
+        plt.xlabel('Epoch')
+        plt.ylabel('Accuracy')
+        plt.title('Categories: Training Accuracy development')
+        plt.legend(loc='best')
+        plt.grid(True)
+        plt_name = self.name + '_categories_train'
+        plt.savefig(self.savedir + '/' + plt_name + '.pdf')
+        plt.savefig(self.savedir + '/' + plt_name + '.png')
+        plt.savefig(self.savedir + '/' + plt_name + '.eps')
+        plt.clf()
+        arr = np.zeros((self.out_size, len(val_cats)))
+        for i in range(len(val_cats)):
+            for j in range(self.out_size):
+                arr[j][i] = val_cats[i][j]
+        for j in range(self.out_size):
+            plt.plot(arr[j], label = self.labels_text[j])
+        plt.xlabel('Epoch')
+        plt.ylabel('Accuracy')
+        plt.title('Categories: Validation Accuracy development')
+        plt.legend(loc='best')
+        plt.grid(True)
+        plt_name = self.name + '_categories_val'
+        plt.savefig(self.savedir + '/' + plt_name + '.pdf')
+        plt.savefig(self.savedir + '/' + plt_name + '.png')
+        plt.savefig(self.savedir + '/' + plt_name + '.eps')
+        plt.clf()
+
 
     def _plot_auc_dev(self, train_auc, val_auc, nepochs):
         """Plot ROC-AUC-Score development
@@ -469,12 +546,6 @@ class OneHotMLP:
 
 
     def _plot_cross(self, arr_train, arr_val, epoch):
-        # print("Drawing scatter plot 1.")
-        # print(t_true)
-        # print(t_pred)
-        # plt.scatter(t_true, t_pred, s=6)
-        # plt.hexbin(t_true, t_pred)
-        # plt.axis(t_true.min(), t_true.max(), t_pred.min(), t_pred.max())
         arr_train_float = np.zeros((arr_train.shape[0], arr_train.shape[1]),
             dtype = np.float32)
         arr_val_float = np.zeros((arr_val.shape[0], arr_val.shape[1]), dtype =
@@ -503,21 +574,32 @@ class OneHotMLP:
         plt.ylim(0, self.out_size)
         plt.xlabel("Predicted")
         plt.ylabel("True")
-        labels = ['ttH', 'tt + bb', 'tt + light']
         ax = plt.gca()
         ax.set_xticks(np.arange((x.shape[0] - 1)) + 0.5, minor=False)
         ax.set_yticks(np.arange((y.shape[0] - 1)) + 0.5, minor=False)
-        ax.set_xticklabels(labels)
-        ax.set_yticklabels(labels)
+        ax.set_xticklabels(self.labels_text)
+        ax.set_yticklabels(self.labels_text)
         plt.title("Heatmap: Training")
         plt.savefig(self.cross_savedir + '/{}_train.pdf'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train.png'.format(epoch))
         plt.clf()
-        # print("Drawing scatter plot 2.")
-        # plt.scatter(v_true, v_pred, s=6)
-        # plt.hexbin(v_true, v_pred)
-        # plt.axis(v_true.min(), v_true.max(), v_pred.min(), v_pred.max())
+        plt.pcolormesh(xn, yn, arr_train_float)
+        plt.colorbar()
+        plt.xlim(0, self.out_size)
+        plt.ylim(0, self.out_size)
+        plt.xlabel("Predicted")
+        plt.ylabel("True")
+        ax = plt.gca()
+        ax.set_xticks(np.arange((x.shape[0] - 1)) + 0.5, minor=False)
+        ax.set_yticks(np.arange((y.shape[0] - 1)) + 0.5, minor=False)
+        ax.set_xticklabels(self.labels_text)
+        ax.set_yticklabels(self.labels_text)
+        plt.title("Heatmap: Training")
+        plt.savefig(self.cross_savedir + '/{}_train.pdf'.format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_train.eps'.format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_train.png'.format(epoch))
+        plt.clf()
         plt.pcolormesh(xn, yn, arr_val_float)
         plt.colorbar()
         plt.xlim(0, self.out_size)
@@ -527,14 +609,71 @@ class OneHotMLP:
         ax = plt.gca()
         ax.set_xticks(np.arange((x.shape[0] - 1)) + 0.5, minor=False)
         ax.set_yticks(np.arange((y.shape[0] - 1)) + 0.5, minor=False)
-        ax.set_xticklabels(labels)
-        ax.set_yticklabels(labels)
+        ax.set_xticklabels(self.labels_text)
+        ax.set_yticklabels(self.labels_text)
         plt.title("Heatmap: Validation")
         plt.savefig(self.cross_savedir + '/{}_validation.pdf'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation.png'.format(epoch))
         plt.clf()
-        # print("Done.")
+        
+        # Draw again with LogNorm colors
+        plt.pcolormesh(xn, yn, arr_train_float, norm=colors.LogNorm(vmin=1e-6,
+            vmax=1.0))
+        plt.colorbar()
+        plt.xlim(0, self.out_size)
+        plt.ylim(0, self.out_size)
+        plt.xlabel("Predicted")
+        plt.ylabel("True")
+        ax = plt.gca()
+        ax.set_xticks(np.arange((x.shape[0] - 1)) + 0.5, minor=False)
+        ax.set_yticks(np.arange((y.shape[0] - 1)) + 0.5, minor=False)
+        ax.set_xticklabels(self.labels_text)
+        ax.set_yticklabels(self.labels_text)
+        plt.title("Heatmap: Training")
+        plt.savefig(self.cross_savedir + '/{}_train_colorlog.pdf'.format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_train_colorlog.eps'.format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_train_colorlog.png'.format(epoch))
+        plt.clf()
+        plt.pcolormesh(xn, yn, arr_val_float, norm=colors.LogNorm(vmin=1e-6,
+            vmax=1.0))
+        plt.colorbar()
+        plt.xlim(0, self.out_size)
+        plt.ylim(0, self.out_size)
+        plt.xlabel("Predicted")
+        plt.ylabel("True")
+        ax = plt.gca()
+        ax.set_xticks(np.arange((x.shape[0] - 1)) + 0.5, minor=False)
+        ax.set_yticks(np.arange((y.shape[0] - 1)) + 0.5, minor=False)
+        ax.set_xticklabels(self.labels_text)
+        ax.set_yticklabels(self.labels_text)
+        plt.title("Heatmap: Validation")
+        plt.savefig(self.cross_savedir + '/{}_validation_colorlog.pdf'.format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_validation_colorlog.eps'.format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_validation_colorlog.png'.format(epoch))
+        plt.clf()
+
+    
+    def _plot_weight_matrices(self, w, epoch):
+        for i in range(len(w)):
+            weight = w[i]
+            np_weight = weight.eval()
+            xr, yr = np_weight.shape
+            x = range(xr + 1)
+            y = range(yr + 1)
+            xn, yn = np.meshgrid(y,x)
+            plt.pcolormesh(xn, yn, np_weight)
+            plt.colorbar()
+            plt.xlim(0, np_weight.shape[1])
+            plt.ylim(0, np_weight.shape[0])
+            plt.xlabel('out')
+            plt.ylabel('in')
+            title = "Heatmap: weight[{}], epoch: {}".format(i+1, epoch+1)
+            plt.title(title)
+            plt.savefig(self.weights_savedir +
+                    '/epoch{}_weight{}.pdf'.format(epoch+1, i+1))
+            plt.clf()
+
 
 
     def _write_list(self, outlist, name):
@@ -543,3 +682,31 @@ class OneHotMLP:
 
         with open(path, 'wb') as out:
             pickle.dump(outlist, out)
+
+
+    def _plot_hists(self, arr_train, arr_val, epoch):
+        """Plot histograms of probability distributions.
+
+        Arguments:
+        ----------------
+        arr_train (array):
+            Array of shape (n_events_train, out_size) containing probabilities
+            for each event to belong to each category.
+        arr_val (array):
+            Array of shape (n_events_val, out_size) containing probabilities for
+            each event to belong to each category.
+        """
+
+         
+        for i in range(arr_train.shape[1]):
+            n, bins, patches = plt.hist(arr_train[:,i], bins=100, normed=False)
+            plt.savefig(self.hists_savedir_train + str(epoch+1) + '_' + str(i+1) + '.pdf')
+            plt.savefig(self.hists_savedir_train + str(epoch+1) + '_' + str(i+1) + '.eps')
+            plt.savefig(self.hists_savedir_train + str(epoch+1) + '_' + str(i+1) + '.png')
+            plt.clf()
+        for i in range(arr_val.shape[1]):
+            n, bins, patches = plt.hist(arr_val[:,i], bins=100, normed=False)
+            plt.savefig(self.hists_savedir_val + str(epoch+1) + '_' + str(i+1) + '.pdf')
+            plt.savefig(self.hists_savedir_val + str(epoch+1) + '_' + str(i+1) + '.eps')
+            plt.savefig(self.hists_savedir_val + str(epoch+1) + '_' + str(i+1) + '.png')
+            plt.clf()
