@@ -4,10 +4,10 @@ class DataFrame:
     def __init__(self, array, out_size, sizes):
         """Initializes the DataFrame.
 
-        Arguments:
+        Arguments: 
         ----------------
         array (numpy ndarray):
-            Array containing the labels, data, and weights.
+            Array containing labels, data, and weights.
         out_size (int):
             Dimension of the output (i.e. label).
         sizes (numpy array):
@@ -21,14 +21,27 @@ class DataFrame:
         self.sizes = sizes
         self.n = self.x.shape[0]
         self.nfeatures = self.x.shape[1]
-
         print('Found {} events.'.format(self.n))
         print('Length of each event: {}'.format(self.nfeatures))
 
         print('Now shuffling data...')
         self.shuffle()
-        print('Done.')
+        print('done.')
 
+    def normalize(self):
+        """Normalizes the training data.
+        """
+
+        x_mean = np.mean(self.x, axis=0).astype(np.float32)
+        x_max = np.amax(self.x, axis=0).astype(np.float32)
+        x_min = np.amin(self.x, axis=0).astype(np.float32)
+
+
+        for i in range(self.x.shape[1]):
+            for j in range(self.x.shape[0]):
+                self.x[j,i] = 2.0 * (self.x[j,i] - x_mean[i]) / (x_max[i] - x_min[i])
+    
+    
     def _create_array(self):
         self.n_events = np.amin(self.sizes)
         # print(self.n_events)
@@ -133,7 +146,7 @@ class DataFrame:
 
         Arguments:
         ----------------
-        batch_size(int):
+        batch_size (int):
             Size of each batch.
         """
         if (self.next_id + batch_size >= self.n):

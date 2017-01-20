@@ -17,12 +17,12 @@ print('done.')
 
 # print(train[0])
 
-beta = 1e-10
+beta = 1e-9
 outsize = 6
-N_EPOCHS = 300
-learning_rate = 2e-2
-hidden_layers = [300,300,300,300]
-exec_name = '4x300'
+N_EPOCHS = 30
+learning_rate = 0.0005
+hidden_layers = [150, 150, 150]
+exec_name = '3x150'
 model_location = outpath + exec_name
 train_sizes = np.array([143639, 43665, 29278, 60445, 127357, 453687])
 val_sizes = np.array([143511, 43074, 29451, 60860, 127646, 454255])
@@ -32,9 +32,8 @@ val = DataFrame(val, out_size=outsize, sizes = val_sizes)
 
 cl = OneHotMLP(train.nfeatures, 
         hidden_layers, outsize, model_location)
-cl.train(train, val, epochs=N_EPOCHS, batch_size=500, learning_rate=
-        learning_rate, keep_prob=0.2, beta=beta, out_size=outsize)
+cl.train(train, val, epochs=N_EPOCHS, batch_size=2000, learning_rate=
+        learning_rate, keep_prob=0.9, beta=beta, out_size=outsize)
 with open('{}/data_info.txt'.format(model_location), 'w') as out:
     out.write('Training data: {}\n'.format(trainpath))
     out.write('Validation data: {}\n'.format(valpath))
-

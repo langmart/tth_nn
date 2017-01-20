@@ -2,7 +2,7 @@
 import numpy as np
 import datetime
 from onehot_mlp_3_categories import OneHotMLP
-from data_frame_oneHot_3_categories import DataFrame
+from data_frame_3_categories import DataFrame
 
 
 trainpath = '/storage/7/lang/nn_data/converted/ttH_ttbb_ttlight/even1_bdt.npy'
@@ -19,17 +19,19 @@ print('done.')
 
 beta = 1e-9
 outsize = 3
-N_EPOCHS = 500
+N_EPOCHS = 300
 learning_rate = 1e-6
-hidden_layers = [400,400,400]
-exec_name = '3x400_3_categories_bdt_equal_categories'
+hidden_layers = [150, 150, 150]
+exec_name = '3x150_equalcat_bdt_3_categories'
 model_location = outpath + exec_name
+labels = ['ttH', 'tt+bb', 'tt+light']
+
 train = DataFrame(train, out_size=outsize)
 val = DataFrame(val, out_size=outsize)
 
 cl = OneHotMLP(train.nfeatures, 
-        hidden_layers, outsize, model_location)
-cl.train(train, val, epochs=N_EPOCHS, batch_size=200, learning_rate=
+        hidden_layers, outsize, model_location, labels)
+cl.train(train, val, epochs=N_EPOCHS, batch_size=2000, learning_rate=
         learning_rate, keep_prob=0.9, beta=beta, out_size=outsize)
 
 with open('{}/data_info.txt'.format(model_location), 'w') as out:
