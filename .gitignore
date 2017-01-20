@@ -2,7 +2,6 @@ train*.py
 get_branches/
 get_branches
 __pycache__
-branchlists
 filelist
 graph/
 data/
