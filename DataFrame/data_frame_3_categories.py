@@ -40,7 +40,10 @@ class DataFrame:
 
         for i in range(self.x.shape[1]):
             for j in range(self.x.shape[0]):
-                self.x[j,i] = 2.0 * (self.x[j,i] - x_mean[i]) / (x_max[i] - x_min[i])
+                if not ((x_max[i] - x_min[i]) == 0):
+                    self.x[j,i] = 2.0 * (self.x[j,i] - x_mean[i]) / (x_max[i] - x_min[i])
+                else:
+                    self.x[j,i] = 0.0
 
 
     

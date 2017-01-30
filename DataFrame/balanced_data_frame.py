@@ -1,6 +1,7 @@
 import numpy as np
 
 class DataFrame:
+
     def __init__(self, array, out_size, sizes):
         """Initializes the DataFrame.
 
@@ -21,12 +22,14 @@ class DataFrame:
         self.sizes = sizes
         self.n = self.x.shape[0]
         self.nfeatures = self.x.shape[1]
+
         print('Found {} events.'.format(self.n))
         print('Length of each event: {}'.format(self.nfeatures))
 
         print('Now shuffling data...')
         self.shuffle()
         print('done.')
+
 
     def normalize(self):
         """Normalizes the training data.
@@ -39,7 +42,10 @@ class DataFrame:
 
         for i in range(self.x.shape[1]):
             for j in range(self.x.shape[0]):
-                self.x[j,i] = 2.0 * (self.x[j,i] - x_mean[i]) / (x_max[i] - x_min[i])
+                if not ((x_max[i] - x_min[i]) == 0):
+                    self.x[j,i] = 2.0 * (self.x[j,i] - x_mean[i]) / (x_max[i] - x_min[i])
+                else:
+                    self.x[j,i] = 0.0
     
     
     def _create_array(self):
@@ -120,10 +126,11 @@ class DataFrame:
         return xs, ys, ws
             
 
-        
+     
     def shuffle(self):
         """Shuffles the data.
         """
+
         perm = np.random.permutation(self.n)
         self.x = self.x[perm]
         self.y = self.y[perm]
@@ -149,6 +156,7 @@ class DataFrame:
         batch_size (int):
             Size of each batch.
         """
+
         if (self.next_id + batch_size >= self.n):
             self.shuffle()
 
@@ -158,5 +166,4 @@ class DataFrame:
         return (np.array(self.created_x[cur_id:cur_id + batch_size]),
                 np.array(self.created_y[cur_id:cur_id + batch_size]),
                 np.array(self.created_w[cur_id:cur_id + batch_size]))
-        
 
