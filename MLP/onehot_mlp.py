@@ -14,6 +14,7 @@ import os
 import sys
 import time
 import pickle
+os.environ['CUDA_VISIBLE_DEVICES'] = "2,3"
 
 # from sklearn.metrics import roc_auc_score, roc_curve
 
@@ -79,6 +80,9 @@ class OneHotMLP:
         self.weights_savedir = self.cross_savedir + '/weights/'
         if not os.path.isdir(self.weights_savedir):
             os.makedirs(self.weights_savedir)
+        self.mistag_savedir = self.cross_savedir + '/mistag/'
+        if not os.path.isdir(self.mistag_savedir):
+            os.makedirs(self.mistag_savedir)
 
 
     def _get_parameters(self):
@@ -97,9 +101,9 @@ class OneHotMLP:
 
         weights = [tf.Variable(tf.random_normal([n_features, h_layers[0]], 
             stddev=tf.sqrt(2.0/n_features)), name = 'W_1')]
-        # biases = [tf.Variable(tf.zeros([h_layers[0]]), name = 'B_1')]
-        biases = [tf.Variable(tf.random_normal([h_layers[0]], stddev =
-            tf.sqrt(2.0 / (h_layers[0]))), name = 'B_1')]
+        biases = [tf.Variable(tf.zeros([h_layers[0]]), name = 'B_1')]
+        # biases = [tf.Variable(tf.random_normal([h_layers[0]], stddev =
+        #     tf.sqrt(2.0 / (h_layers[0]))), name = 'B_1')]
 
 
         # weights = [tf.Variable(tf.random_uniform([n_features, h_layers[0]],
@@ -114,10 +118,10 @@ class OneHotMLP:
                 weights.append(tf.Variable(tf.random_normal([h_layers[i-1],
                     h_layers[i]], stddev = tf.sqrt(2.0 / h_layers[i-1])), name =
                     'W_{}'.format(i+1)))
-                # biases.append(tf.Variable(tf.zeros([h_layers[i]]), name =
-                #     'B_{}'.format(i+1)))
-                biases.append(tf.Variable(tf.random_normal([h_layers[i]], stddev
-                    = tf.sqrt(2.0 / h_layers[i])), name = 'B_{}'.format(i+1)))
+                biases.append(tf.Variable(tf.zeros([h_layers[i]]), name =
+                    'B_{}'.format(i+1)))
+                # biases.append(tf.Variable(tf.random_normal([h_layers[i]], stddev
+                #     = tf.sqrt(2.0 / h_layers[i])), name = 'B_{}'.format(i+1)))
                 # weights.append(tf.Variable(tf.random_uniform([h_layers[i-1],
                 #     h_layers[i]], minval = 0.0, maxval = 1.0), name =
                 #     'W_{}'.format(i+1)))
@@ -127,9 +131,9 @@ class OneHotMLP:
         # connect the last hidden layer to the output layer
         weights.append(tf.Variable(tf.random_normal([h_layers[-1], self.out_size],
             stddev = tf.sqrt(2.0/h_layers[-1])), name = 'W_out'))
-        # biases.append(tf.Variable(tf.zeros([self.out_size]), name = 'B_out'))
-        biases.append(tf.Variable(tf.random_normal([self.out_size], stddev
-            = tf.sqrt(2.0 / self.out_size)), name = 'B_out'))
+        biases.append(tf.Variable(tf.zeros([self.out_size]), name = 'B_out'))
+        # biases.append(tf.Variable(tf.random_normal([self.out_size], stddev
+        #     = tf.sqrt(2.0 / self.out_size)), name = 'B_out'))
         # weights.append(tf.Variable(tf.random_uniform([h_layers[-1],
         #     self.out_size], minval = 0.0, maxval = 1.0), name = 'W_out'))
         # biases.append(tf.Variable(tf.random_uniform([self.out_size], minval =
@@ -171,8 +175,9 @@ class OneHotMLP:
         # return tf.nn.relu(out)
         return out
 
-    def train(self, train_data, val_data, epochs = 10, batch_size = 100,
-            learning_rate = 1e-3, keep_prob = 0.9, beta = 0.0, out_size=1):
+    def train(self, train_data, val_data, optimizer='Adam', epochs = 10, batch_size = 100,
+            learning_rate = 1e-3, keep_prob = 0.9, beta = 0.0, out_size=6,
+            optimizer_options=[]):
         """Trains the classifier
 
         Arguments:
@@ -181,17 +186,28 @@ class OneHotMLP:
             Contains training data.
         val_data (custom dataset):
             Contains validation data.
-        savedir (string):
-            Path to the directory to save plots.
+        optimizer (string):
+            Name of the optimizer to be built.
         epochs (int): 
             Number of iterations over the whole training set.
         batch_size (int):
             Number of batches fed into one optimization step.
+        learning_rate (float):
+            Optimizer learning rate.
         keep_prob (float):
             Probability of a neuron to 'fire'.
         beta (float):
             L2 regularization coefficient; default 0.0 = regularization off.
+        out_size (int):
+            Dimension of output vector, i.e. number of classes.
+        optimizer_options (list):
+            List of additional options for the optimizer; can have different
+            data types for different optimizers.
         """
+
+        self.optname = optimizer
+        self.learning_rate = learning_rate
+        self.optimizer_options = optimizer_options
 
         train_graph = tf.Graph()
         with train_graph.as_default():
@@ -203,7 +219,7 @@ class OneHotMLP:
 
             # prediction
             y_ = self._model(x, weights, biases, keep_prob)
-            yy_ = self._model(x, weights, biases)
+            yy_ = tf.nn.softmax(self._model(x, weights, biases))
             # loss function
             # xentropy = - (tf.mul(y, tf.log(y_ + 1e-10)) + tf.mul(1-y, tf.log(1-y_ + 1e-10)))
             # xentropy = tf.reduce_sum(tf.mul( - y, tf.log(y_ + 1e-10)))
@@ -214,15 +230,19 @@ class OneHotMLP:
             loss = tf.reduce_mean(tf.reduce_sum(tf.mul(w, xentropy))) + l2_reg
             # loss = tf.reduce_mean(np.sum(np.square(np.subtract(y,y_))))
             # optimizer
-            train_step = tf.train.AdamOptimizer(learning_rate).minimize(loss)
-            # train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
+            optimizer = self._build_optimizer()
+            train_step = optimizer.minimize(loss)
 
             # initialize all variables
             init = tf.initialize_all_variables()
             saver = tf.train.Saver(weights + biases)
         train_start = time.time()
         
-        with tf.Session(graph=train_graph) as sess:
+        # Non-static memory management; memory can be allocated on the fly.
+        sess_config = tf.ConfigProto()
+        sess_config.gpu_options.allow_growth = True
+        
+        with tf.Session(config=sess_config, graph=train_graph) as sess:
             self.model_loc = self.savedir + '/{}.ckpt'.format(self.name)
             sess.run(init)
             train_accuracy = []
@@ -250,7 +270,7 @@ class OneHotMLP:
             cross_train_list = []
             cross_val_list = []
             for epoch in range(epochs):
-                total_batches = int(train_data.n_events/batch_size)
+                total_batches = int(train_data.n/batch_size)
                 epoch_loss = 0
                 for _ in range(total_batches):
                     # train in batches
@@ -258,23 +278,19 @@ class OneHotMLP:
                     _, train_loss, weights_for_plot = sess.run([train_step,
                         loss, weights], {x:train_x, y:train_y, w:train_w})
                     epoch_loss += train_loss
-                self._plot_weight_matrices(weights, epoch)
                 train_losses.append(np.mean(epoch_loss))
                 train_data.shuffle()
 
-                # train_pre = sess.run(yy_, {x:train_data.x})
-                #         train_data.y, epoch)
                 # monitor training
-                train_pre = sess.run(yy_, {x:train_data.created_x})
-                train_corr, train_mistag, train_cross = self._validate_epoch( 
-                        train_pre, train_data.created_y, epoch)
+                train_pre = sess.run(yy_, {x:train_data.x})
+                train_corr, train_mistag, train_cross, train_cat = self._validate_epoch( 
+                        train_pre, train_data.y, epoch)
                 print('train: {}'.format((train_corr, train_mistag)))
                 train_accuracy.append(train_corr / (train_corr + train_mistag))
                 
-                val_pre = sess.run(yy_, {x:val_data.created_x})
-                #         val_pre, val_data.y, epoch)
-                val_corr, val_mistag, val_cross = self._validate_epoch(val_pre,
-                        val_data.created_y, epoch)
+                val_pre = sess.run(yy_, {x:val_data.x})
+                val_corr, val_mistag, val_cross, val_cat = self._validate_epoch(val_pre,
+                        val_data.y, epoch)
                 print('validation: {}'.format((val_corr, val_mistag)))
                 val_accuracy.append(val_corr / (val_corr + val_mistag))
                 
@@ -286,10 +302,8 @@ class OneHotMLP:
                 cross_val_list.append(val_cross)
                 train_cats.append(train_cat)
                 val_cats.append(val_cat)
-                self._plot_cross(train_cross, val_cross, epoch + 1)
-                self._plot_hists(train_pre, val_pre, epoch)
 
-                if ((epoch+1) % 10 == 0):
+                if (epoch % 20 == 0):
                     self._plot_loss(train_losses)
                     self._write_list(cross_train_list, 'train_cross')
                     self._write_list(cross_val_list, 'val_cross')
@@ -298,17 +312,24 @@ class OneHotMLP:
                     self._write_list(val_accuracy, 'val_accuracy')
                     self._plot_accuracy(train_accuracy, val_accuracy, train_cats,
                             val_cats, epochs)
+                    self._plot_weight_matrices(weights, epoch)
+                    self._plot_cross(train_cross, val_cross, epoch + 1)
+                    self._plot_hists(train_pre, val_pre, epoch)
+                    self._plot_cross_dev(cross_train_list, cross_val_list,
+                            epoch+1)
 
             print(110*'-')
             train_end=time.time()
 
-            # self._validation(val_pre, val_data.y)
-            # self._plot_auc_dev(train_auc, val_auc, epochs)
             self._plot_accuracy(train_accuracy, val_accuracy, train_cats,
                     val_cats, epochs)
             self._plot_loss(train_losses)
             self._write_parameters(epochs, batch_size, keep_prob, beta,
                     (train_end - train_start) / 60)
+            self._plot_weight_matrices(weights, epoch)
+            self._plot_cross(train_cross, val_cross, epoch + 1)
+            self._plot_hists(train_pre, val_pre, epoch)
+            self._plot_cross_dev(cross_train_list, cross_val_list, epoch+1)
             self._write_list(cross_train_list, 'train_cross')
             self._write_list(cross_val_list, 'val_cross')
             self._write_list(train_losses, 'train_losses')
@@ -352,13 +373,7 @@ class OneHotMLP:
 
         arr_cross = np.zeros((self.out_size, self.out_size),dtype=np.int)
         for i in range(pred_onehot.shape[0]):
-            # TODO
             equal = True
-            # print(pred_onehot.shape[1])
-            # if ((epoch + 1) % 10 == 0): 
-            #     index_true = np.argmax(labels[i])
-            #     index_pred = np.argmax(pred_onehot[i])
-            #     arr_cross[index_true][index_pred] += 1
             index_true = np.argmax(labels[i])
             index_pred = np.argmax(pred_onehot[i])
             arr_cross[index_true][index_pred] += 1
@@ -377,6 +392,79 @@ class OneHotMLP:
         return correct, mistag, arr_cross, cat_acc
 
 
+    def _build_optimizer(self):
+        """Returns a TensorFlow Optimizer.
+        """
+        if (self.optname == 'Adam'):
+            try:
+                beta1 = self.optimizer_options[0]
+            except IndexError:
+                beta1 = 0.9
+            try:
+                beta2 = self.optimizer_options[1]
+            except IndexError:
+                beta2 = 0.999
+            try:
+                epsilon = self.optimizer_options[2]
+            except IndexError:
+                epsilon = 1e-8
+            optimizer = tf.train.AdamOptimizer(self.learning_rate, beta1=beta1,
+                    beta2=beta2, epsilon=epsilon)
+            print('Building Adam Optimizer.')
+            print('     learning_rate: {}'.format(self.learning_rate))
+            print('     beta1: {}'.format(beta1))
+            print('     beta2: {}'.format(beta2))
+            print('     epsilon: {}'.format(epsilon))
+        elif (self.optname == 'GradDescent'):
+            optimizer = tf.train.GradientDescentOptimizer(self.learning_rate)
+            print('Building Gradient Descent Optimizer.')
+            print('     learning_rate: {}'.format(self.learning_rate))
+        elif (self.optname == 'Adagrad'):
+            try:
+                initial_accumulator_value = self.optimizer_options[0]
+            except IndexError:
+                initial_accumulator_value = 0.1
+            optimizer = tf.train.AdagradOptimizer(self.learning_rate,
+                    initial_accumulator_value=initial_accumulator_value)
+            print('Building Adagrad Optimizer.')
+            print('     learning_rate: {}'.format(self.learning_rate))
+            print('     initial_accumulator_value: {}'
+                    .format(initial_accumulator_value))
+        elif (self.optname == 'Adadelta'):
+            try:
+                rho = self.optimizer_options[0]
+            except IndexError:
+                rho = 0.95
+            try:
+                epsilon = self.optimizer_options[1]
+            except IndexError:
+                epsilon = 1e-8
+            optimizer = tf.train.AdadeltaOptimizer(self.learning_rate, rho=rho,
+                epsilon=epsilon)
+            print('Building Adadelta Optimizer.')
+            print('     learning_rate: {}'.format(self.learning_rate))
+            print('     rho: {}'.format(rho))
+            print('     epsilon: {}'.format(epsilon))
+        elif (self.optname == 'Momentum'):
+            try:
+                momentum = self.optimizer_options[0]
+            except IndexError:
+                momentum = 0.9
+            try:
+                use_nesterov = self.optimizer_options[1]
+            except IndexError:
+                use_nesterov = False
+            optimizer = tf.train.MomentumOptimizer(self.learning_rate,
+                    momentum=momentum, use_nesterov=use_nesterov)
+            print('Building Momentum Optimizer.')
+            print('     learning_rate: {}'.format(self.learning_rate))
+            print('     momentum: {}'.format(momentum))
+            print('     use_nesterov: {}'.format(use_nesterov))
+        else:
+            print('No Optimizer with name {} has been implemented.'
+                    .format(self.optname))
+            sys.exit('Aborting.')
+        return optimizer
 
     def _onehot(self, arr, length):
         # TODO
@@ -403,64 +491,10 @@ class OneHotMLP:
             f.write('Dropout: {}\n'.format(keep_prob))
             f.write('L2 Regularization: {}\n'.format(beta))
             f.write('Training Time: {} min\n'.format(time))
-
-
-    def predict_prob(self, data):
-        """Predict probability of a new feature to belong to the signal or
-        different background sources. 
-
-        Arguments:
-        ----------------
-        data (custom data set):
-            Data to classify.
-
-        Returns:
-        ----------------
-        prob (np.array):
-            Contains probabilities of a sample to belong to the signal or
-            different background sources.
-        """
-
-        if not self.trained():
-            sys.exit('Model {} has not been trained yet.'.format(self.name))
-
-        predict_graph = tf.Graph()
-        with predict_graph.as_default():
-            weights, biases = self._get_parameters()
-            x = tf.placeholder(tf.float32, [None, self.n_features])
-            y_prob = self._model(x, weights, biases)
-            saver = tf.train.Saver()
-        with tf.Session(graph = predict_graph) as sess:
-            saver.restore(sess, self.savedir + '/{}.ckpt'.format(self.name))
-            prob = sess.run(y_prob, {x:data})
-
-        return prob
-
-
-    def get_weights(self, branches):
-        weight_graph = tf.Graph()
-        with weight_graph.as_default():
-            weights, biases = self._get_parameters()
-            saver = tf.train.Saver()
-        with tf.Session(graph = weight_graph) as sess:
-            saver.restore(sess, self.savedir + '/{}.ckpt'.format(self.name))
-            w = []
-            for weight in weights:
-                w.append(sess.run(weight))
-            # TODO: plot all weights, not just first layer
-            self._plot_weights(w[0], branches)
-
-
-    def _plot_weights(self, weight, branches):
-        x = np.sum(weight, axis = 1)
-        x_pos = np.arange(len(x))
-        plt.bar(x_pos,x,align='center')
-        plt.xticks(x_pos, branches, rotation = 30, ha = 'right')
-        plt.tight_layout()
-        plt.grid(True)
-        plt.savefig(self.weights_savedir + 'weight0.pdf')
-        plt.show()
-        plt.clf()
+            f.write('Optimizer: {}\n'.format(self.optname))
+            f.write('Learning rate {}\n'.format(self.learning_rate))
+            if (self.optimizer_options):
+                f.write('Optimizer options: {}'.format(self.optimizer_options))
 
 
     def _plot_loss(self, train_loss):
@@ -522,24 +556,6 @@ class OneHotMLP:
         plt.legend(loc='best')
         plt.grid(True)
         plt_name = self.name + '_categories_val'
-        plt.savefig(self.savedir + '/' + plt_name + '.pdf')
-        plt.savefig(self.savedir + '/' + plt_name + '.png')
-        plt.savefig(self.savedir + '/' + plt_name + '.eps')
-        plt.clf()
-
-
-    def _plot_auc_dev(self, train_auc, val_auc, nepochs):
-        """Plot ROC-AUC-Score development
-        """
-        plt.plot(train_auc, color='red', label='AUC Training')
-        plt.plot(val_auc, color='black', label='AUC Validation')
-        plt.xlabel('Epoch')
-        plt.ylabel('ROC_AUC')
-        plt.title('ROC_AUC Development')
-        plt.legend(loc = 'best')
-        plt.grid(True)
-        plt_name = self.name + '_auc_dev'
-
         plt.savefig(self.savedir + '/' + plt_name + '.pdf')
         plt.savefig(self.savedir + '/' + plt_name + '.png')
         plt.savefig(self.savedir + '/' + plt_name + '.eps')
@@ -654,7 +670,7 @@ class OneHotMLP:
         plt.savefig(self.cross_savedir + '/{}_validation_colorlog.png'.format(epoch))
         plt.clf()
 
-    
+
     def _plot_weight_matrices(self, w, epoch):
         for i in range(len(w)):
             weight = w[i]
@@ -711,3 +727,112 @@ class OneHotMLP:
             plt.savefig(self.hists_savedir_val + str(epoch+1) + '_' + str(i+1) + '.eps')
             plt.savefig(self.hists_savedir_val + str(epoch+1) + '_' + str(i+1) + '.png')
             plt.clf()
+
+
+    def _plot_cross_dev(self, train_list, val_list, epoch):
+        """Plot the development of misclassifications.
+
+        Arguments:
+        ----------------
+        train_list (list):
+            List containing a cross check array for each epoch.
+        val_list (list):
+            List containing a cross check array for each epoch.
+        epoch (int):
+            Epoch.
+        """
+        train_x_classified_as_y = np.zeros((epoch, self.out_size, self.out_size))
+        val_x_classified_as_y = np.zeros((epoch, self.out_size, self.out_size))
+        train_y_classified_as_x = np.zeros((epoch, self.out_size,
+            self.out_size))
+        val_y_classified_as_x = np.zeros((epoch, self.out_size, self.out_size))
+
+
+        for list_index in range(len(train_list)):
+            arr_train = train_list[list_index]
+            arr_val = val_list[list_index]
+            row_sum_train = np.sum(arr_train, axis=1)
+            column_sum_train = np.sum(arr_train, axis=0)
+            row_sum_val = np.sum(arr_val, axis=1)
+            column_sum_val = np.sum(arr_val, axis=0)
+            
+            for i in range(arr_train.shape[0]):
+                for j in range(arr_train.shape[1]):
+                    if (row_sum_train[i] != 0):
+                        train_x_classified_as_y[list_index,i,j] = arr_train[i][j] / row_sum_train[i]
+                    else:
+                        train_x_classified_as_y[list_index,i,j] = arr_train[i][j]
+                    if (row_sum_val[i] != 0):
+                        val_x_classified_as_y[list_index,i,j] = arr_val[i][j] / row_sum_val[i]
+                    else:
+                        val_x_classified_as_y[list_index,i,j] = arr_val[i][j]
+                    if (column_sum_train[i] != 0):
+                        train_y_classified_as_x[list_index,i,j] = arr_train[i][j] / column_sum_train[i]
+                    else:
+                        train_y_classified_as_x[list_index,i,j] = arr_train[i][j]
+                    if (column_sum_val[i] != 0):
+                        val_y_classified_as_x[list_index,i,j] = arr_val[i][j] / column_sum_val[i]
+                    else:
+                        val_y_classified_as_x[list_index,i,j] = arr_val[i][j]
+
+        for i in range(train_x_classified_as_y.shape[1]):
+            for j in range(train_x_classified_as_y.shape[2]):
+                plt.plot(train_x_classified_as_y[:,i,j],
+                        label=self.labels_text[j])
+            plt.title(self.labels_text[i] + ' classified as')
+            plt.xlabel('Epoch')
+            plt.ylabel('Tagging rate')
+            plt.xlim(0, epoch)
+            plt.ylim(0, 1.0)
+            plt.grid(True)
+            plt.legend(loc='best')
+            plt.savefig(self.mistag_savedir + 'train_x_{}_as.pdf'.format(i))
+            plt.savefig(self.mistag_savedir + 'train_x_{}_as.png'.format(i))
+            plt.savefig(self.mistag_savedir + 'train_x_{}_as.eps'.format(i))
+            plt.clf()
+        for i in range(val_x_classified_as_y.shape[1]):
+            for j in range(val_x_classified_as_y.shape[2]):
+                plt.plot(val_x_classified_as_y[:,i,j],
+                        label=self.labels_text[j])
+            plt.title(self.labels_text[i] + ' classified as')
+            plt.xlabel('Epoch')
+            plt.ylabel('Tagging rate')
+            plt.xlim(0, epoch)
+            plt.ylim(0, 1.0)
+            plt.grid(True)
+            plt.legend(loc='best')
+            plt.savefig(self.mistag_savedir + 'val_x_{}_as.pdf'.format(i))
+            plt.savefig(self.mistag_savedir + 'val_x_{}_as.png'.format(i))
+            plt.savefig(self.mistag_savedir + 'val_x_{}_as.eps'.format(i))
+            plt.clf()
+        for i in range(train_y_classified_as_x.shape[2]):
+            for j in range(train_y_classified_as_x.shape[1]):
+                plt.plot(train_y_classified_as_x[:,i,j],
+                        label=self.labels_text[j])
+            plt.title('classified as ' + self.labels_text[i])
+            plt.xlabel('Epoch')
+            plt.ylabel('Tagging rate')
+            plt.xlim(0, epoch)
+            plt.ylim(0, 1.0)
+            plt.grid(True)
+            plt.legend(loc='best')
+            plt.savefig(self.mistag_savedir + 'train_as_x_{}.pdf'.format(i))
+            plt.savefig(self.mistag_savedir + 'train_as_x_{}.png'.format(i))
+            plt.savefig(self.mistag_savedir + 'train_as_x_{}.eps'.format(i))
+            plt.clf()
+        for i in range(val_y_classified_as_x.shape[2]):
+            for j in range(val_y_classified_as_x.shape[1]):
+                plt.plot(train_y_classified_as_x[:,i,j],
+                        label=self.labels_text[j])
+            plt.title('classified as ' + self.labels_text[i])
+            plt.xlabel('Epoch')
+            plt.ylabel('Tagging rate')
+            plt.xlim(0, epoch)
+            plt.ylim(0, 1.0)
+            plt.grid(True)
+            plt.legend(loc='best')
+            plt.savefig(self.mistag_savedir + 'val_as_x_{}.pdf'.format(i))
+            plt.savefig(self.mistag_savedir + 'val_as_x_{}.png'.format(i))
+            plt.savefig(self.mistag_savedir + 'val_as_x_{}.eps'.format(i))
+            plt.clf()
+
