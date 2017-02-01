@@ -716,13 +716,13 @@ class OneHotMLP:
 
          
         for i in range(arr_train.shape[1]):
-            n, bins, patches = plt.hist(arr_train[:,i], bins=100, normed=False)
+            n, bins, patches = plt.hist(arr_train[:,i], bins=10000, normed=False)
             plt.savefig(self.hists_savedir_train + str(epoch+1) + '_' + str(i+1) + '.pdf')
             plt.savefig(self.hists_savedir_train + str(epoch+1) + '_' + str(i+1) + '.eps')
             plt.savefig(self.hists_savedir_train + str(epoch+1) + '_' + str(i+1) + '.png')
             plt.clf()
         for i in range(arr_val.shape[1]):
-            n, bins, patches = plt.hist(arr_val[:,i], bins=100, normed=False)
+            n, bins, patches = plt.hist(arr_val[:,i], bins=10000, normed=False)
             plt.savefig(self.hists_savedir_val + str(epoch+1) + '_' + str(i+1) + '.pdf')
             plt.savefig(self.hists_savedir_val + str(epoch+1) + '_' + str(i+1) + '.eps')
             plt.savefig(self.hists_savedir_val + str(epoch+1) + '_' + str(i+1) + '.png')
