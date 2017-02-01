@@ -252,12 +252,8 @@ class OneHotMLP:
             train_losses = []
             train_cats = []
             val_cats = []
-            print('Now normalizing training data.')
             train_data.normalize()
-            print('Done.')
-            print('Now normalizing validation data.')
             val_data.normalize()
-            print('Done.')
 
 
             print(110*'-')
@@ -771,11 +767,11 @@ class OneHotMLP:
                     else:
                         val_x_classified_as_y[list_index,i,j] = arr_val[i][j]
                     if (column_sum_train[i] != 0):
-                        train_y_classified_as_x[list_index,i,j] = arr_train[i][j] / column_sum_train[i]
+                        train_y_classified_as_x[list_index,i,j] = arr_train[i][j] / column_sum_train[j]
                     else:
                         train_y_classified_as_x[list_index,i,j] = arr_train[i][j]
                     if (column_sum_val[i] != 0):
-                        val_y_classified_as_x[list_index,i,j] = arr_val[i][j] / column_sum_val[i]
+                        val_y_classified_as_x[list_index,i,j] = arr_val[i][j] / column_sum_val[j]
                     else:
                         val_y_classified_as_x[list_index,i,j] = arr_val[i][j]
 

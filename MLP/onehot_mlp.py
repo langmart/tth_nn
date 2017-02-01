@@ -755,7 +755,7 @@ class OneHotMLP:
             column_sum_train = np.sum(arr_train, axis=0)
             row_sum_val = np.sum(arr_val, axis=1)
             column_sum_val = np.sum(arr_val, axis=0)
-            
+
             for i in range(arr_train.shape[0]):
                 for j in range(arr_train.shape[1]):
                     if (row_sum_train[i] != 0):
@@ -766,12 +766,12 @@ class OneHotMLP:
                         val_x_classified_as_y[list_index,i,j] = arr_val[i][j] / row_sum_val[i]
                     else:
                         val_x_classified_as_y[list_index,i,j] = arr_val[i][j]
-                    if (column_sum_train[i] != 0):
-                        train_y_classified_as_x[list_index,i,j] = arr_train[i][j] / column_sum_train[i]
+                    if (column_sum_train[j] != 0):
+                        train_y_classified_as_x[list_index,i,j] = arr_train[i][j] / column_sum_train[j]
                     else:
                         train_y_classified_as_x[list_index,i,j] = arr_train[i][j]
-                    if (column_sum_val[i] != 0):
-                        val_y_classified_as_x[list_index,i,j] = arr_val[i][j] / column_sum_val[i]
+                    if (column_sum_val[j] != 0):
+                        val_y_classified_as_x[list_index,i,j] = arr_val[i][j] / column_sum_val[j]
                     else:
                         val_y_classified_as_x[list_index,i,j] = arr_val[i][j]
 

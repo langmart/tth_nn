@@ -1,4 +1,4 @@
-train_oneHot*.py
+train_*.py
 get_branches/
 get_branches
 __pycache__
