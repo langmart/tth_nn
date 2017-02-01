@@ -5,8 +5,8 @@ from MLP.onehot_mlp import OneHotMLP
 from DataFrame.data_frame import DataFrame
 
 
-trainpath ='/storage/7/lang/nn_data/converted/all_categories/even1_bdt.npy'
-valpath = '/storage/7/lang/nn_data/converted/all_categories/odd1_bdt.npy'
+trainpath ='/storage/7/lang/nn_data/converted/without_light/even1_bdt_evt_jets.npy'
+valpath = '/storage/7/lang/nn_data/converted/without_light/odd1_bdt_evt_jets.npy'
 datestring = datetime.datetime.now().strftime("%Y_%m_%d")
 outpath = 'data/executed/' + datestring + '/'
 print('Loading data...')
@@ -16,14 +16,14 @@ print('done.')
 
 # print(train[0])
 
-optname = 'Adam'
+optname = 'Adadelta'
 # implemented Optimizers: 
 # 'Adam':               Adam Optimizer
 # 'GradDescent':        Gradient Descent Optimizer
 # 'Adagrad':            Adagrad Optimizer
 # 'Adadelta':           Adadelta Optimizer
 # 'Momentum':           Momentum Optimizer
-optimizer_options = [0.9, 0.999, 1e-8]
+optimizer_options = [0.98, 1e-8]
 beta = 1e-10
 # Optimizer options may have different data types for different optimizers.
 # 'Adam':               [beta1=0.9 (float), beta2=0.999 (float), epsilon=1e-8 (float)]
@@ -33,11 +33,11 @@ beta = 1e-10
 # 'Momentum':           [momentum=0.9 (float), use_nesterov=False (bool)]
 # For information about these parameters please refer to the TensorFlow
 # documentation.
-outsize = 6
-N_EPOCHS = 20
-learning_rate = 1e-2
+outsize = 5
+N_EPOCHS = 300
+learning_rate = 1e-3
 hidden_layers = [200, 200]
-exec_name = '2x200_equalcat_bdt'
+exec_name = '2x200_equalcat_bdt_evt_jets_without_light'
 model_location = outpath + exec_name
 labels = ['ttH', 'tt+bb', 'tt+2b', 'tt+b', 'tt+cc', 'tt+light']
 

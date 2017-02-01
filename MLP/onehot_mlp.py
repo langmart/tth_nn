@@ -252,12 +252,8 @@ class OneHotMLP:
             train_losses = []
             train_cats = []
             val_cats = []
-            print('Now normalizing training data.')
             train_data.normalize()
-            print('Done.')
-            print('Now normalizing validation data.')
             val_data.normalize()
-            print('Done.')
 
 
             print(110*'-')
@@ -635,7 +631,9 @@ class OneHotMLP:
         plt.clf()
         
         # Draw again with LogNorm colors
-        plt.pcolormesh(xn, yn, arr_train_float, norm=colors.LogNorm(vmin=1e-6,
+        cmap = matplotlib.cm.jet
+        cmap.set_bad((0,0,1))
+        plt.pcolormesh(xn, yn, arr_train_float, cmap=cmap, norm=colors.LogNorm(vmin=1e-6,
             vmax=1.0))
         plt.colorbar()
         plt.xlim(0, self.out_size)
@@ -652,7 +650,9 @@ class OneHotMLP:
         plt.savefig(self.cross_savedir + '/{}_train_colorlog.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog.png'.format(epoch))
         plt.clf()
-        plt.pcolormesh(xn, yn, arr_val_float, norm=colors.LogNorm(vmin=1e-6,
+        cmap = matplotlib.cm.jet
+        cmap.set_bad((0,0,1))
+        plt.pcolormesh(xn, yn, arr_val_float, cmap=cmap, norm=colors.LogNorm(vmin=1e-6,
             vmax=1.0))
         plt.colorbar()
         plt.xlim(0, self.out_size)
@@ -716,13 +716,13 @@ class OneHotMLP:
 
          
         for i in range(arr_train.shape[1]):
-            n, bins, patches = plt.hist(arr_train[:,i], bins=100, normed=False)
+            n, bins, patches = plt.hist(arr_train[:,i], bins=10000, normed=False)
             plt.savefig(self.hists_savedir_train + str(epoch+1) + '_' + str(i+1) + '.pdf')
             plt.savefig(self.hists_savedir_train + str(epoch+1) + '_' + str(i+1) + '.eps')
             plt.savefig(self.hists_savedir_train + str(epoch+1) + '_' + str(i+1) + '.png')
             plt.clf()
         for i in range(arr_val.shape[1]):
-            n, bins, patches = plt.hist(arr_val[:,i], bins=100, normed=False)
+            n, bins, patches = plt.hist(arr_val[:,i], bins=10000, normed=False)
             plt.savefig(self.hists_savedir_val + str(epoch+1) + '_' + str(i+1) + '.pdf')
             plt.savefig(self.hists_savedir_val + str(epoch+1) + '_' + str(i+1) + '.eps')
             plt.savefig(self.hists_savedir_val + str(epoch+1) + '_' + str(i+1) + '.png')

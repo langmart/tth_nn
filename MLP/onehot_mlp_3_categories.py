@@ -635,7 +635,9 @@ class OneHotMLP:
         plt.clf()
         
         # Draw again with LogNorm colors
-        plt.pcolormesh(xn, yn, arr_train_float, norm=colors.LogNorm(vmin=1e-6,
+        cmap = matplotlib.cm.jet
+        cmap.set_bad((0,0,1))
+        plt.pcolormesh(xn, yn, arr_train_float, cmap=cmap, norm=colors.LogNorm(vmin=1e-6,
             vmax=1.0))
         plt.colorbar()
         plt.xlim(0, self.out_size)
@@ -652,7 +654,9 @@ class OneHotMLP:
         plt.savefig(self.cross_savedir + '/{}_train_colorlog.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog.png'.format(epoch))
         plt.clf()
-        plt.pcolormesh(xn, yn, arr_val_float, norm=colors.LogNorm(vmin=1e-6,
+        cmap = matplotlib.cm.jet
+        cmap.set_bad((0,0,1))
+        plt.pcolormesh(xn, yn, arr_val_float, cmap=cmap, norm=colors.LogNorm(vmin=1e-6,
             vmax=1.0))
         plt.colorbar()
         plt.xlim(0, self.out_size)
