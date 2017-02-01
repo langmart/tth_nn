@@ -581,7 +581,7 @@ class OneHotMLP:
         x = np.linspace(0, self.out_size, self.out_size + 1)
         y = np.linspace(0, self.out_size, self.out_size + 1)
         xn, yn = np.meshgrid(x,y)
-        plt.pcolormesh(xn, yn, arr_train_float)
+        plt.pcolormesh(xn, yn, arr_train_float, vmin=0.0, vmax=1.0)
         plt.colorbar()
         plt.xlim(0, self.out_size)
         plt.ylim(0, self.out_size)
@@ -597,23 +597,7 @@ class OneHotMLP:
         plt.savefig(self.cross_savedir + '/{}_train.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train.png'.format(epoch))
         plt.clf()
-        plt.pcolormesh(xn, yn, arr_train_float)
-        plt.colorbar()
-        plt.xlim(0, self.out_size)
-        plt.ylim(0, self.out_size)
-        plt.xlabel("Predicted")
-        plt.ylabel("True")
-        ax = plt.gca()
-        ax.set_xticks(np.arange((x.shape[0] - 1)) + 0.5, minor=False)
-        ax.set_yticks(np.arange((y.shape[0] - 1)) + 0.5, minor=False)
-        ax.set_xticklabels(self.labels_text)
-        ax.set_yticklabels(self.labels_text)
-        plt.title("Heatmap: Training")
-        plt.savefig(self.cross_savedir + '/{}_train.pdf'.format(epoch))
-        plt.savefig(self.cross_savedir + '/{}_train.eps'.format(epoch))
-        plt.savefig(self.cross_savedir + '/{}_train.png'.format(epoch))
-        plt.clf()
-        plt.pcolormesh(xn, yn, arr_val_float)
+        plt.pcolormesh(xn, yn, arr_val_float, vmin=0.0, vmax=1.0)
         plt.colorbar()
         plt.xlim(0, self.out_size)
         plt.ylim(0, self.out_size)
@@ -766,11 +750,11 @@ class OneHotMLP:
                         val_x_classified_as_y[list_index,i,j] = arr_val[i][j] / row_sum_val[i]
                     else:
                         val_x_classified_as_y[list_index,i,j] = arr_val[i][j]
-                    if (column_sum_train[i] != 0):
+                    if (column_sum_train[j] != 0):
                         train_y_classified_as_x[list_index,i,j] = arr_train[i][j] / column_sum_train[j]
                     else:
                         train_y_classified_as_x[list_index,i,j] = arr_train[i][j]
-                    if (column_sum_val[i] != 0):
+                    if (column_sum_val[j] != 0):
                         val_y_classified_as_x[list_index,i,j] = arr_val[i][j] / column_sum_val[j]
                     else:
                         val_y_classified_as_x[list_index,i,j] = arr_val[i][j]
