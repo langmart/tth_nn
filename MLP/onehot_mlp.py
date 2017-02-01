@@ -252,12 +252,8 @@ class OneHotMLP:
             train_losses = []
             train_cats = []
             val_cats = []
-            print('Now normalizing training data.')
             train_data.normalize()
-            print('Done.')
-            print('Now normalizing validation data.')
             val_data.normalize()
-            print('Done.')
 
 
             print(110*'-')
@@ -635,7 +631,9 @@ class OneHotMLP:
         plt.clf()
         
         # Draw again with LogNorm colors
-        plt.pcolormesh(xn, yn, arr_train_float, norm=colors.LogNorm(vmin=1e-6,
+        cmap = matplotlib.cm.jet
+        cmap.set_bad((0,0,1))
+        plt.pcolormesh(xn, yn, arr_train_float, cmap=cmap, norm=colors.LogNorm(vmin=1e-6,
             vmax=1.0))
         plt.colorbar()
         plt.xlim(0, self.out_size)
@@ -652,7 +650,9 @@ class OneHotMLP:
         plt.savefig(self.cross_savedir + '/{}_train_colorlog.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog.png'.format(epoch))
         plt.clf()
-        plt.pcolormesh(xn, yn, arr_val_float, norm=colors.LogNorm(vmin=1e-6,
+        cmap = matplotlib.cm.jet
+        cmap.set_bad((0,0,1))
+        plt.pcolormesh(xn, yn, arr_val_float, cmap=cmap, norm=colors.LogNorm(vmin=1e-6,
             vmax=1.0))
         plt.colorbar()
         plt.xlim(0, self.out_size)
@@ -755,7 +755,7 @@ class OneHotMLP:
             column_sum_train = np.sum(arr_train, axis=0)
             row_sum_val = np.sum(arr_val, axis=1)
             column_sum_val = np.sum(arr_val, axis=0)
-            
+
             for i in range(arr_train.shape[0]):
                 for j in range(arr_train.shape[1]):
                     if (row_sum_train[i] != 0):
@@ -766,12 +766,12 @@ class OneHotMLP:
                         val_x_classified_as_y[list_index,i,j] = arr_val[i][j] / row_sum_val[i]
                     else:
                         val_x_classified_as_y[list_index,i,j] = arr_val[i][j]
-                    if (column_sum_train[i] != 0):
-                        train_y_classified_as_x[list_index,i,j] = arr_train[i][j] / column_sum_train[i]
+                    if (column_sum_train[j] != 0):
+                        train_y_classified_as_x[list_index,i,j] = arr_train[i][j] / column_sum_train[j]
                     else:
                         train_y_classified_as_x[list_index,i,j] = arr_train[i][j]
-                    if (column_sum_val[i] != 0):
-                        val_y_classified_as_x[list_index,i,j] = arr_val[i][j] / column_sum_val[i]
+                    if (column_sum_val[j] != 0):
+                        val_y_classified_as_x[list_index,i,j] = arr_val[i][j] / column_sum_val[j]
                     else:
                         val_y_classified_as_x[list_index,i,j] = arr_val[i][j]
 

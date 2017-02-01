@@ -5,8 +5,8 @@ from MLP.onehot_mlp import OneHotMLP
 from DataFrame.data_frame import DataFrame
 
 
-trainpath ='/storage/7/lang/nn_data/converted/all_categories/even1_bdt.npy'
-valpath = '/storage/7/lang/nn_data/converted/all_categories/odd1_bdt.npy'
+trainpath ='/storage/7/lang/nn_data/converted/without_light/even1_bdt.npy'
+valpath = '/storage/7/lang/nn_data/converted/without_light/odd1_bdt.npy'
 datestring = datetime.datetime.now().strftime("%Y_%m_%d")
 outpath = 'data/executed/' + datestring + '/'
 print('Loading data...')
@@ -23,8 +23,8 @@ optname = 'Adam'
 # 'Adagrad':            Adagrad Optimizer
 # 'Adadelta':           Adadelta Optimizer
 # 'Momentum':           Momentum Optimizer
-optimizer_options = [0.9, 0.999, 1e-8]
-beta = 1e-10
+optimizer_options = []
+beta = 1e-8
 # Optimizer options may have different data types for different optimizers.
 # 'Adam':               [beta1=0.9 (float), beta2=0.999 (float), epsilon=1e-8 (float)]
 # 'GradDescent':        []
@@ -33,17 +33,19 @@ beta = 1e-10
 # 'Momentum':           [momentum=0.9 (float), use_nesterov=False (bool)]
 # For information about these parameters please refer to the TensorFlow
 # documentation.
-outsize = 6
-N_EPOCHS = 20
+outsize = 5
+N_EPOCHS = 40
 learning_rate = 1e-2
-hidden_layers = [200, 200]
-exec_name = '2x200_equalcat_bdt'
+hidden_layers = [200, 200, 200, 200, 200]
+exec_name = '5x200_equalcat_1bdt'
 model_location = outpath + exec_name
 labels = ['ttH', 'tt+bb', 'tt+2b', 'tt+b', 'tt+cc', 'tt+light']
+# Choose normalization from 'minmax' or 'gaussian'.
+normalization = 'gaussian'
 
 # Be careful when editing the part below.
-train = DataFrame(train, out_size=outsize)
-val = DataFrame(val, out_size=outsize)
+train = DataFrame(train, out_size=outsize, normalization=normalization)
+val = DataFrame(val, out_size=outsize, normalization=normalization)
 
 cl = OneHotMLP(train.nfeatures, 
         hidden_layers, outsize, model_location, labels)
