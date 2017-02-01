@@ -34,17 +34,10 @@ beta = 1e-8
 # For information about these parameters please refer to the TensorFlow
 # documentation.
 outsize = 6
-<<<<<<< HEAD
 N_EPOCHS = 40
 learning_rate = 1e-2
 hidden_layers = [200, 200, 200, 200, 200]
 exec_name = '5x200_equalcat_1bdt'
-=======
-N_EPOCHS = 300
-learning_rate = 1e-3
-hidden_layers = [200, 200, 200, 200, 200]
-exec_name = '5x200_equalcat_Jet_N_Evt_2'
->>>>>>> 19dcead7ff02ae98dfe47b9d5f316a1468c467b1
 model_location = outpath + exec_name
 labels = ['ttH', 'tt+bb', 'tt+2b', 'tt+b', 'tt+cc', 'tt+light']
 # Choose normalization from 'minmax' or 'gaussian'.
