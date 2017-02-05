@@ -5,8 +5,8 @@ from MLP.onehot_mlp_balanced import OneHotMLP
 from DataFrame.balanced_data_frame import DataFrame
 
 
-trainpath = '/storage/7/lang/nn_data/converted/all_categories/even1_equal_events_bdt.npy'
-valpath = '/storage/7/lang/nn_data/converted/all_categories/odd1_equal_events_bdt.npy'
+trainpath = '/storage/7/lang/nn_data/converted/all_categories/even3_bdt.npy'
+valpath = '/storage/7/lang/nn_data/converted/all_categories/odd3_bdt.npy'
 datestring = datetime.datetime.now().strftime("%Y_%m_%d")
 outpath = 'data/executed/' + datestring + '/'
 print('Loading data...')
@@ -23,8 +23,8 @@ optname = 'Adam'
 # 'Adagrad':            Adagrad Optimizer
 # 'Adadelta':           Adadelta Optimizer
 # 'Momentum':           Momentum Optimizer
-optimizer_options = [0.9, 0.999, 1e-8]
-beta = 1e-10
+optimizer_options = []
+beta = 1e-8
 # Optimizer options may have different data types for different optimizers.
 # 'Adam':               [beta1=0.9 (float), beta2=0.999 (float), epsilon=1e-8 (float)]
 # 'GradDescent':        []
@@ -34,18 +34,22 @@ beta = 1e-10
 # For information about these parameters please refer to the TensorFlow
 # documentation.
 outsize = 6
-N_EPOCHS = 20
+N_EPOCHS = 40
 learning_rate = 1e-2
-hidden_layers = [200, 200]
-exec_name = '2x200_equal_events_bdt'
+hidden_layers = [200, 200, 200, 200, 200]
+exec_name = '5x200_equal_events_bdt'
 model_location = outpath + exec_name
 train_sizes = np.array([143639, 43665, 29278, 60445, 127357, 453687])
 val_sizes = np.array([143511, 43074, 29451, 60860, 127646, 454255])
 labels = ['ttH', 'tt+bb', 'tt+2b', 'tt+b', 'tt+cc', 'tt+light']
+# Choose normalization from 'minmax' or 'gaussian'.
+normalization = 'gaussian'
 
 # Be careful when editing the part below.
-train = DataFrame(train, out_size=outsize, sizes = train_sizes)
-val = DataFrame(val, out_size=outsize, sizes = val_sizes)
+train = DataFrame(train, out_size=outsize, sizes = train_sizes, 
+        normalization=normalization)
+val = DataFrame(val, out_size=outsize, sizes = val_sizes,
+        normalization=normalization)
 
 cl = OneHotMLP(train.nfeatures, 
         hidden_layers, outsize, model_location, labels_text=labels)

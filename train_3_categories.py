@@ -33,7 +33,7 @@ beta = 1e-8
 # 'Momentum':           [momentum=0.9 (float), use_nesterov=False (bool)]
 # For information about these parameters please refer to the TensorFlow
 # documentation.
-outsize = 6
+outsize = 3
 N_EPOCHS = 40
 learning_rate = 1e-2
 hidden_layers = [200, 200, 200, 200, 200]
