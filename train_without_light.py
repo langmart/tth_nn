@@ -39,7 +39,7 @@ outsize = 5
 N_EPOCHS = 40
 learning_rate = 1e-2
 hidden_layers = [200, 200, 200, 200, 200]
-exec_name = '5x200_equalcat_1bdt'
+exec_name = '5x200_equalcat_1bdt_without_light'
 model_location = outpath + exec_name
 labels = ['ttH', 'tt+bb', 'tt+2b', 'tt+b', 'tt+cc', 'tt+light']
 # Choose normalization from 'minmax' or 'gaussian'.

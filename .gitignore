@@ -14,3 +14,4 @@ data/
 *.ckpt
 *.ckpt.meta
 test*
+executed
