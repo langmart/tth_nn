@@ -276,6 +276,7 @@ class OneHotMLP:
                     epoch_loss += train_loss
                 train_losses.append(np.mean(epoch_loss))
                 train_data.shuffle()
+                val_data.shuffle()
 
                 # monitor training
                 train_pre = sess.run(yy_, {x:train_data.created_x})
