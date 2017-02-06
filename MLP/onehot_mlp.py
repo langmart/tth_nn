@@ -99,15 +99,15 @@ class OneHotMLP:
         n_features = self.n_features
         h_layers = self.h_layers
 
-        weights = [tf.Variable(tf.random_normal([n_features, h_layers[0]], 
-            stddev=tf.sqrt(2.0/n_features)), name = 'W_1')]
+        # weights = [tf.Variable(tf.random_normal([n_features, h_layers[0]], 
+        #     stddev=tf.sqrt(2.0/n_features)), name = 'W_1')]
         biases = [tf.Variable(tf.zeros([h_layers[0]]), name = 'B_1')]
         # biases = [tf.Variable(tf.random_normal([h_layers[0]], stddev =
         #     tf.sqrt(2.0 / (h_layers[0]))), name = 'B_1')]
+        # biases = [tf.Variable(tf.fill(dims=[h_layers[0]], value=0.1), name='B_1')]
 
-
-        # weights = [tf.Variable(tf.random_uniform([n_features, h_layers[0]],
-        #     minval=0.0, maxval=1.0), name='W_1')]
+        weights = [tf.Variable(tf.random_uniform([n_features, h_layers[0]],
+            minval=0.0, maxval=1.0), name='W_1')]
         # biases = [tf.Variable(tf.random_uniform([h_layers[0]], minval = 0.0,
         #     maxval = 1.0), name = 'B_1')]
 
@@ -115,30 +115,33 @@ class OneHotMLP:
         # if more than 1 hidden layer -> create additional weights and biases
         if len(h_layers) > 1:
             for i in range(1, len(h_layers)):
-                weights.append(tf.Variable(tf.random_normal([h_layers[i-1],
-                    h_layers[i]], stddev = tf.sqrt(2.0 / h_layers[i-1])), name =
-                    'W_{}'.format(i+1)))
+                # weights.append(tf.Variable(tf.random_normal([h_layers[i-1],
+                #     h_layers[i]], stddev = tf.sqrt(2.0 / h_layers[i-1])), name =
+                #     'W_{}'.format(i+1)))
                 biases.append(tf.Variable(tf.zeros([h_layers[i]]), name =
                     'B_{}'.format(i+1)))
                 # biases.append(tf.Variable(tf.random_normal([h_layers[i]], stddev
                 #     = tf.sqrt(2.0 / h_layers[i])), name = 'B_{}'.format(i+1)))
-                # weights.append(tf.Variable(tf.random_uniform([h_layers[i-1],
-                #     h_layers[i]], minval = 0.0, maxval = 1.0), name =
-                #     'W_{}'.format(i+1)))
+                weights.append(tf.Variable(tf.random_uniform([h_layers[i-1],
+                    h_layers[i]], minval = 0.0, maxval = 1.0), name =
+                    'W_{}'.format(i+1)))
                 # biases.append(tf.Variable(tf.random_uniform([h_layers[i]],
                 #     minval = 0.0, maxval = 1.0), name = 'B_{}'.format(i+1)))
+                # biases.append(tf.Variable(tf.fill(dims=[h_layers[i]],
+                #     value=0.1), name='B_{}'.format(i+1)))
 
         # connect the last hidden layer to the output layer
-        weights.append(tf.Variable(tf.random_normal([h_layers[-1], self.out_size],
-            stddev = tf.sqrt(2.0/h_layers[-1])), name = 'W_out'))
+        # weights.append(tf.Variable(tf.random_normal([h_layers[-1], self.out_size],
+        #     stddev = tf.sqrt(2.0/h_layers[-1])), name = 'W_out'))
         biases.append(tf.Variable(tf.zeros([self.out_size]), name = 'B_out'))
         # biases.append(tf.Variable(tf.random_normal([self.out_size], stddev
         #     = tf.sqrt(2.0 / self.out_size)), name = 'B_out'))
-        # weights.append(tf.Variable(tf.random_uniform([h_layers[-1],
-        #     self.out_size], minval = 0.0, maxval = 1.0), name = 'W_out'))
+        weights.append(tf.Variable(tf.random_uniform([h_layers[-1],
+            self.out_size], minval = 0.0, maxval = 1.0), name = 'W_out'))
         # biases.append(tf.Variable(tf.random_uniform([self.out_size], minval =
         #     0.0, maxval = 1.0), name = 'B_out'))
-
+        # biases.append(tf.Variable(tf.fill(dims=[self.out_size], value=0.1),
+        #     name='B_out'))
         
         return weights, biases
 
@@ -177,7 +180,7 @@ class OneHotMLP:
 
     def train(self, train_data, val_data, optimizer='Adam', epochs = 10, batch_size = 100,
             learning_rate = 1e-3, keep_prob = 0.9, beta = 0.0, out_size=6,
-            optimizer_options=[]):
+            optimizer_options=[], early_stop=10):
         """Trains the classifier
 
         Arguments:
@@ -203,6 +206,9 @@ class OneHotMLP:
         optimizer_options (list):
             List of additional options for the optimizer; can have different
             data types for different optimizers.
+        early_stop (int):
+            If validation accuracy does not increase over 10 epochs the training
+            process will be ended and only the best model will be saved.
         """
 
         self.optname = optimizer
@@ -254,7 +260,7 @@ class OneHotMLP:
             val_cats = []
             train_data.normalize()
             val_data.normalize()
-
+            early_stopping = {'val_acc': 0.0, 'epoch': 0}
 
             print(110*'-')
             print('Train model: {}'.format(self.model_loc))
@@ -299,7 +305,24 @@ class OneHotMLP:
                 train_cats.append(train_cat)
                 val_cats.append(val_cat)
 
-                if (epoch % 20 == 0):
+                if early_stop:
+                    # Check for early stopping.
+                    if (val_accuracy[-1] > early_stopping['val_acc']):
+                        save_path = saver.save(sess, self.model_loc)
+                        early_stopping['val_acc'] = val_accuracy[-1]
+                        early_stopping['epoch'] = epoch + 1
+                    elif ((epoch+1 - early_stopping['epoch']) > early_stop):
+                        print(125*'-')
+                        print('Validation Accuracy has not increased for {}'\
+                                ' epochs. Achieced best validation score of '\
+                                '{:.4f} in epoch {}.'.format(early_stop,
+                                    early_stopping['val_acc'],
+                                    early_stopping['epoch']))
+                        break
+                else:
+                    save_path = saver.save(sess, self.model_loc)
+
+                if (epoch % 10 == 0):
                     self._plot_loss(train_losses)
                     self._write_list(cross_train_list, 'train_cross')
                     self._write_list(cross_val_list, 'val_cross')
@@ -321,7 +344,7 @@ class OneHotMLP:
                     val_cats, epochs)
             self._plot_loss(train_losses)
             self._write_parameters(epochs, batch_size, keep_prob, beta,
-                    (train_end - train_start) / 60)
+                    (train_end - train_start), early_stopping)
             self._plot_weight_matrices(weights, epoch)
             self._plot_cross(train_cross, val_cross, epoch + 1)
             self._plot_hists(train_pre, val_pre, epoch)
@@ -477,7 +500,8 @@ class OneHotMLP:
         return dummy_array
 
 
-    def _write_parameters(self, epochs, batch_size, keep_prob, beta, time):
+    def _write_parameters(self, epochs, batch_size, keep_prob, beta, time,
+            early_stop):
         """Writes network parameters in a .txt. file
         """
 
@@ -486,11 +510,13 @@ class OneHotMLP:
             f.write('Batch Size: {}\n'.format(batch_size))
             f.write('Dropout: {}\n'.format(keep_prob))
             f.write('L2 Regularization: {}\n'.format(beta))
-            f.write('Training Time: {} min\n'.format(time))
+            f.write('Training Time: {} sec.\n'.format(time))
             f.write('Optimizer: {}\n'.format(self.optname))
             f.write('Learning rate {}\n'.format(self.learning_rate))
             if (self.optimizer_options):
                 f.write('Optimizer options: {}'.format(self.optimizer_options))
+            f.write('Number of epochs trained: {}'.format(early_stop['epoch']))
+            f.write('Validation accuracy: {}'.format(early_stop['val_acc']))
 
 
     def _plot_loss(self, train_loss):
@@ -654,6 +680,56 @@ class OneHotMLP:
         plt.savefig(self.cross_savedir + '/{}_validation_colorlog.png'.format(epoch))
         plt.clf()
 
+        # Draw again with absolute numbers
+        cmap = matplotlib.cm.jet
+        cmap.set_bad('w')
+        plt.pcolormesh(xn, yn, arr_train, cmap=cmap, norm=colors.LogNorm(
+            vmin=1, vmax=np.max(arr_train)))
+        plt.colorbar()
+        plt.xlim(0, self.out_size)
+        plt.ylim(0, self.out_size)
+        
+        plt.xlabel("Predicted")
+        plt.ylabel("True")
+        for yit in range(arr_train.shape[0]):
+            for xit in range(arr_train.shape[1]):
+                plt.text(xit + 0.5, yit + 0.5, '%d' % arr_train[yit, xit], 
+                        horizontalalignment='center', verticalalignment='center',)
+        ax = plt.gca()
+        ax.set_xticks(np.arange((x.shape[0] - 1)) + 0.5, minor=False)
+        ax.set_yticks(np.arange((y.shape[0] - 1)) + 0.5, minor=False)
+        ax.set_xticklabels(self.labels_text)
+        ax.set_yticklabels(self.labels_text)
+        plt.title("Heatmap: Training")
+        plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute.pdf'.format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute.eps'.format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute.png'.format(epoch))
+        plt.clf()
+        cmap = matplotlib.cm.jet
+        cmap.set_bad('w')
+        plt.pcolormesh(xn, yn, arr_val, cmap=cmap, norm=colors.LogNorm(
+            vmin=1, vmax=np.max(arr_val)))
+        plt.colorbar()
+        plt.xlim(0, self.out_size)
+        plt.ylim(0, self.out_size)
+        
+        plt.xlabel("Predicted")
+        plt.ylabel("True")
+        for yit in range(arr_val.shape[0]):
+            for xit in range(arr_val.shape[1]):
+                plt.text(xit + 0.5, yit + 0.5, '%d' % arr_val[yit, xit], 
+                        horizontalalignment='center', verticalalignment='center',)
+        ax = plt.gca()
+        ax.set_xticks(np.arange((x.shape[0] - 1)) + 0.5, minor=False)
+        ax.set_yticks(np.arange((y.shape[0] - 1)) + 0.5, minor=False)
+        ax.set_xticklabels(self.labels_text)
+        ax.set_yticklabels(self.labels_text)
+        plt.title("Heatmap: Training")
+        plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute.pdf'.format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute.eps'.format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute.png'.format(epoch))
+        plt.clf()
+
 
     def _plot_weight_matrices(self, w, epoch):
         for i in range(len(w)):
@@ -739,7 +815,6 @@ class OneHotMLP:
             column_sum_train = np.sum(arr_train, axis=0)
             row_sum_val = np.sum(arr_val, axis=1)
             column_sum_val = np.sum(arr_val, axis=0)
-
             for i in range(arr_train.shape[0]):
                 for j in range(arr_train.shape[1]):
                     if (row_sum_train[i] != 0):

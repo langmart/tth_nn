@@ -37,6 +37,7 @@ beta = 1e-8
 # documentation.
 outsize = 5
 N_EPOCHS = 40
+early_stop = 10
 learning_rate = 1e-2
 hidden_layers = [200, 200, 200, 200, 200]
 exec_name = '5x200_equalcat_1bdt_without_light'
@@ -50,10 +51,10 @@ train = DataFrame(train, out_size=outsize, normalization=normalization)
 val = DataFrame(val, out_size=outsize, normalization=normalization)
 
 cl = OneHotMLP(train.nfeatures, 
-        hidden_layers, outsize, model_location, labels)
+        hidden_layers, outsize, model_location, labels_text=labels)
 cl.train(train, val, optimizer=optname, epochs=N_EPOCHS, batch_size=5000, learning_rate=
         learning_rate, keep_prob=0.95, beta=beta, out_size=outsize,
-        optimizer_options=optimizer_options)
+        optimizer_options=optimizer_options, early_stop=early_stop)
 with open('{}/data_info.txt'.format(model_location), 'w') as out:
     out.write('Training data: {}\n'.format(trainpath))
     out.write('Validation data: {}\n'.format(valpath))
