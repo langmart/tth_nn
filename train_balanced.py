@@ -55,7 +55,7 @@ cl = OneHotMLP(train.nfeatures,
         hidden_layers, outsize, model_location, labels_text=labels)
 cl.train(train, val, optimizer=optname, epochs=N_EPOCHS, batch_size=2000, learning_rate=
         learning_rate, keep_prob=0.95, beta=beta, out_size=outsize,
-        optimizer_options=optimizer_options)
+        optimizer_options=optimizer_options, early_stop=early_stop)
 with open('{}/data_info.txt'.format(model_location), 'w') as out:
     out.write('Training data: {}\n'.format(trainpath))
     out.write('Validation data: {}\n'.format(valpath))

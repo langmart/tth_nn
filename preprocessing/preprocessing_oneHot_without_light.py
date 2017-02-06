@@ -238,8 +238,9 @@ class GetBranches:
     def _get_weights(self, structured_array):
         """Calculate the weight for each event.
 
-        For each event we will calculate: 
-        Weight_XS * Weight_CSV * Weight_pu69p2
+        For each event we will calculate:
+        Weight_XS
+        out-dated: Weight_XS * Weight_CSV * Weight_pu69p2
         Then the weights are normalized so that the sum over all weights is
         equal to 1.
 
@@ -254,7 +255,7 @@ class GetBranches:
             An array of shape (-1,1) filled with the weight of each event.
         """
 
-        weight_names = ['Weight_XS', 'Weight_CSV', 'Weight_pu69p2']
+        weight_names = ['Weight_XS']
         weights, _ = self._get_branches(structured_array, weight_names)
         weights = np.prod(weights, axis=1).reshape(-1,1)
         weights /+ np.sum(weights)

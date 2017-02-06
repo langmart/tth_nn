@@ -5,8 +5,8 @@ from MLP.onehot_mlp import OneHotMLP
 from DataFrame.data_frame import DataFrame
 
 
-trainpath ='/storage/7/lang/nn_data/converted/all_categories/even1_branches_new.npy'
-valpath = '/storage/7/lang/nn_data/converted/all_categories/odd1_branches_new.npy'
+trainpath ='/storage/7/lang/nn_data/converted/all_categories/even1_Jet_N_Evt.npy'
+valpath = '/storage/7/lang/nn_data/converted/all_categories/odd1_Jet_N_Evt.npy'
 datestring = datetime.datetime.now().strftime("%Y_%m_%d")
 outpath = 'data/executed/' + datestring + '/'
 print('Loading data...')
@@ -34,10 +34,11 @@ beta = 1e-8
 # For information about these parameters please refer to the TensorFlow
 # documentation.
 outsize = 6
-N_EPOCHS = 150
+N_EPOCHS = 40
+early_stop = 10
 learning_rate = 1e-2
-hidden_layers = [200, 200, 200, 200, 200]
-exec_name = '5x200_equalcat_branches_new_2'
+hidden_layers = [200]
+exec_name = '1x200_equalcat_Jet_N_Evt'
 model_location = outpath + exec_name
 labels = ['ttH', 'tt+bb', 'tt+2b', 'tt+b', 'tt+cc', 'tt+light']
 # Choose normalization from 'minmax' or 'gaussian'.
@@ -48,10 +49,10 @@ train = DataFrame(train, out_size=outsize, normalization=normalization)
 val = DataFrame(val, out_size=outsize, normalization=normalization)
 
 cl = OneHotMLP(train.nfeatures, 
-        hidden_layers, outsize, model_location, labels)
+        hidden_layers, outsize, model_location, labels_text=labels)
 cl.train(train, val, optimizer=optname, epochs=N_EPOCHS, batch_size=5000, learning_rate=
         learning_rate, keep_prob=0.95, beta=beta, out_size=outsize,
-        optimizer_options=optimizer_options)
+        optimizer_options=optimizer_options, early_stop=early_stop)
 with open('{}/data_info.txt'.format(model_location), 'w') as out:
     out.write('Training data: {}\n'.format(trainpath))
     out.write('Validation data: {}\n'.format(valpath))

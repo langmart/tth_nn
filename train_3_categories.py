@@ -26,7 +26,8 @@ optname = 'Adam'
 optimizer_options = []
 beta = 1e-8
 # Optimizer options may have different data types for different optimizers.
-# 'Adam':               [beta1=0.9 (float), beta2=0.999 (float), epsilon=1e-8 (float)]
+# 'Adam':               [beta1=0.9 (float), beta2=0.999 (float), epsilon=1e-8
+# (float)]
 # 'GradDescent':        []
 # 'Adagrad':            [initial_accumulator_value=0.1 (float)]
 # 'Adadelta':           [rho=0.95 (float), epsilon=1e-8 (float)]
@@ -35,6 +36,7 @@ beta = 1e-8
 # documentation.
 outsize = 3
 N_EPOCHS = 40
+early_stop = 10
 learning_rate = 1e-2
 hidden_layers = [200, 200, 200, 200, 200]
 exec_name = '5x200_equalcat_bdt_3_categories'
@@ -51,7 +53,7 @@ cl = OneHotMLP(train.nfeatures,
         hidden_layers, outsize, model_location, labels)
 cl.train(train, val, optimizer=optname, epochs=N_EPOCHS, batch_size=5000, learning_rate=
         learning_rate, keep_prob=0.95, beta=beta, out_size=outsize,
-        optimizer_options=optimizer_options)
+        optimizer_options=optimizer_options, early_stop=early_stop)
 with open('{}/data_info.txt'.format(model_location), 'w') as out:
     out.write('Training data: {}\n'.format(trainpath))
     out.write('Validation data: {}\n'.format(valpath))
