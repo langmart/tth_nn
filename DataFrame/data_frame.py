@@ -31,7 +31,7 @@ class DataFrame:
         print('Now shuffling data...')
         self.shuffle()
         print('done.')
-
+        # print(self.w[0:100])
 
     def normalize(self):
         """Normalizes the training data.
