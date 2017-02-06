@@ -99,15 +99,15 @@ class OneHotMLP:
         n_features = self.n_features
         h_layers = self.h_layers
 
-        # weights = [tf.Variable(tf.random_normal([n_features, h_layers[0]], 
-        #     stddev=tf.sqrt(2.0/n_features)), name = 'W_1')]
+        weights = [tf.Variable(tf.random_normal([n_features, h_layers[0]], 
+            stddev=tf.sqrt(2.0/n_features)), name = 'W_1')]
         biases = [tf.Variable(tf.zeros([h_layers[0]]), name = 'B_1')]
         # biases = [tf.Variable(tf.random_normal([h_layers[0]], stddev =
         #     tf.sqrt(2.0 / (h_layers[0]))), name = 'B_1')]
         # biases = [tf.Variable(tf.fill(dims=[h_layers[0]], value=0.1), name='B_1')]
 
-        weights = [tf.Variable(tf.random_uniform([n_features, h_layers[0]],
-            minval=0.0, maxval=1.0), name='W_1')]
+        # weights = [tf.Variable(tf.random_uniform([n_features, h_layers[0]],
+        #     minval=0.0, maxval=1.0), name='W_1')]
         # biases = [tf.Variable(tf.random_uniform([h_layers[0]], minval = 0.0,
         #     maxval = 1.0), name = 'B_1')]
 
@@ -115,29 +115,29 @@ class OneHotMLP:
         # if more than 1 hidden layer -> create additional weights and biases
         if len(h_layers) > 1:
             for i in range(1, len(h_layers)):
-                # weights.append(tf.Variable(tf.random_normal([h_layers[i-1],
-                #     h_layers[i]], stddev = tf.sqrt(2.0 / h_layers[i-1])), name =
-                #     'W_{}'.format(i+1)))
+                weights.append(tf.Variable(tf.random_normal([h_layers[i-1],
+                    h_layers[i]], stddev = tf.sqrt(2.0 / h_layers[i-1])), name =
+                    'W_{}'.format(i+1)))
                 biases.append(tf.Variable(tf.zeros([h_layers[i]]), name =
                     'B_{}'.format(i+1)))
                 # biases.append(tf.Variable(tf.random_normal([h_layers[i]], stddev
                 #     = tf.sqrt(2.0 / h_layers[i])), name = 'B_{}'.format(i+1)))
-                weights.append(tf.Variable(tf.random_uniform([h_layers[i-1],
-                    h_layers[i]], minval = 0.0, maxval = 1.0), name =
-                    'W_{}'.format(i+1)))
+                # weights.append(tf.Variable(tf.random_uniform([h_layers[i-1],
+                #     h_layers[i]], minval = 0.0, maxval = 1.0), name =
+                #     'W_{}'.format(i+1)))
                 # biases.append(tf.Variable(tf.random_uniform([h_layers[i]],
                 #     minval = 0.0, maxval = 1.0), name = 'B_{}'.format(i+1)))
                 # biases.append(tf.Variable(tf.fill(dims=[h_layers[i]],
                 #     value=0.1), name='B_{}'.format(i+1)))
 
         # connect the last hidden layer to the output layer
-        # weights.append(tf.Variable(tf.random_normal([h_layers[-1], self.out_size],
-        #     stddev = tf.sqrt(2.0/h_layers[-1])), name = 'W_out'))
+        weights.append(tf.Variable(tf.random_normal([h_layers[-1], self.out_size],
+            stddev = tf.sqrt(2.0/h_layers[-1])), name = 'W_out'))
         biases.append(tf.Variable(tf.zeros([self.out_size]), name = 'B_out'))
         # biases.append(tf.Variable(tf.random_normal([self.out_size], stddev
         #     = tf.sqrt(2.0 / self.out_size)), name = 'B_out'))
-        weights.append(tf.Variable(tf.random_uniform([h_layers[-1],
-            self.out_size], minval = 0.0, maxval = 1.0), name = 'W_out'))
+        # weights.append(tf.Variable(tf.random_uniform([h_layers[-1],
+        #     self.out_size], minval = 0.0, maxval = 1.0), name = 'W_out'))
         # biases.append(tf.Variable(tf.random_uniform([self.out_size], minval =
         #     0.0, maxval = 1.0), name = 'B_out'))
         # biases.append(tf.Variable(tf.fill(dims=[self.out_size], value=0.1),
@@ -313,9 +313,9 @@ class OneHotMLP:
                         early_stopping['epoch'] = epoch + 1
                     elif ((epoch+1 - early_stopping['epoch']) > early_stop):
                         print(125*'-')
-                        print('Validation Accuracy has not increased for {}'\
-                                ' epochs. Achieced best validation score of '\
-                                '{:.4f} in epoch {}.'.format(early_stop,
+                        print('Early stopping invoked. '\
+                                'Achieced best validation score of '\
+                                '{:.4f} in epoch {}.'.format(
                                     early_stopping['val_acc'],
                                     early_stopping['epoch']))
                         break

@@ -37,8 +37,8 @@ outsize = 6
 N_EPOCHS = 40
 early_stop = 10
 learning_rate = 1e-2
-hidden_layers = [200]
-exec_name = '1x200_equalcat_Jet_N_Evt'
+hidden_layers = [50, 50]
+exec_name = '2x50_equalcat_Jet_N_Evt'
 model_location = outpath + exec_name
 labels = ['ttH', 'tt+bb', 'tt+2b', 'tt+b', 'tt+cc', 'tt+light']
 # Choose normalization from 'minmax' or 'gaussian'.
