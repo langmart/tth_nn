@@ -104,7 +104,7 @@ class OneHotMLP:
         biases = [tf.Variable(tf.zeros([h_layers[0]]), name = 'B_1')]
         # biases = [tf.Variable(tf.random_normal([h_layers[0]], stddev =
         #     tf.sqrt(2.0 / (h_layers[0]))), name = 'B_1')]
-
+        # biases = [tf.Variable(tf.fill(dims=[h_layers[0]], value=0.1), name='B_1')]
 
         # weights = [tf.Variable(tf.random_uniform([n_features, h_layers[0]],
         #     minval=0.0, maxval=1.0), name='W_1')]
@@ -127,6 +127,8 @@ class OneHotMLP:
                 #     'W_{}'.format(i+1)))
                 # biases.append(tf.Variable(tf.random_uniform([h_layers[i]],
                 #     minval = 0.0, maxval = 1.0), name = 'B_{}'.format(i+1)))
+                # biases.append(tf.Variable(tf.fill(dims=[h_layers[i]],
+                #     value=0.1), name='B_{}'.format(i+1)))
 
         # connect the last hidden layer to the output layer
         weights.append(tf.Variable(tf.random_normal([h_layers[-1], self.out_size],
@@ -138,7 +140,8 @@ class OneHotMLP:
         #     self.out_size], minval = 0.0, maxval = 1.0), name = 'W_out'))
         # biases.append(tf.Variable(tf.random_uniform([self.out_size], minval =
         #     0.0, maxval = 1.0), name = 'B_out'))
-
+        # biases.append(tf.Variable(tf.fill(dims=[self.out_size], value=0.1),
+        #     name='B_out'))
         
         return weights, biases
 
@@ -310,16 +313,16 @@ class OneHotMLP:
                         early_stopping['epoch'] = epoch + 1
                     elif ((epoch+1 - early_stopping['epoch']) > early_stop):
                         print(125*'-')
-                        print('Validation Accuracy has not increased for {}'\
-                                ' epochs. Achieced best validation score of '\
-                                '{:.4f} in epoch {}.'.format(early_stop,
+                        print('Early stopping invoked. '\
+                                'Achieced best validation score of '\
+                                '{:.4f} in epoch {}.'.format(
                                     early_stopping['val_acc'],
                                     early_stopping['epoch']))
                         break
                 else:
                     save_path = saver.save(sess, self.model_loc)
 
-                if (epoch % 20 == 0):
+                if (epoch % 10 == 0):
                     self._plot_loss(train_losses)
                     self._write_list(cross_train_list, 'train_cross')
                     self._write_list(cross_val_list, 'val_cross')

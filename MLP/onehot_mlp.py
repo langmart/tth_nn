@@ -313,9 +313,9 @@ class OneHotMLP:
                         early_stopping['epoch'] = epoch + 1
                     elif ((epoch+1 - early_stopping['epoch']) > early_stop):
                         print(125*'-')
-                        print('Validation Accuracy has not increased for {}'\
-                                ' epochs. Achieced best validation score of '\
-                                '{:.4f} in epoch {}.'.format(early_stop,
+                        print('Early stopping invoked. '\
+                                'Achieced best validation score of '\
+                                '{:.4f} in epoch {}.'.format(
                                     early_stopping['val_acc'],
                                     early_stopping['epoch']))
                         break
