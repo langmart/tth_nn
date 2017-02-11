@@ -25,7 +25,6 @@ class GetBranches:
         Name of the new array.
     """
 
-    # def __init__(self, savedir, branchlist, categories=['30','20','10','01','light'], out_size = 6):
     def __init__(self):
         """Initializes the class with the given attributes.
 
@@ -47,10 +46,8 @@ class GetBranches:
             branchlists, categories_list=[['30', '20', '10', '01', 'light']]):
         self.categories_list = categories_list
         self.branchlists = branchlists
-        # self.save_path = branchlist.split('/')[-1].split('.')[0] + '/' +category
         self.arr_name = arr_name
-        self.savedir = savedir
-        self.save_path = savedir + '/converted'
+        self.save_path = savedir
 
         print('Loading: {} '.format(signal_path), end='')
         structured_sig = np.load(signal_path, encoding='latin1')
@@ -74,13 +71,12 @@ class GetBranches:
 
 
             print('Getting branches: {} ... '.format(branchname), end='')
-            sig_data, sig_branches = self._get_branches(structured_sig,
+            sig_data, sig_branches = self._get_branches( structured_sig, 
                     self.branches)
-            bg_data, bg_branches = self._get_branches(structured_bg, self.branches)
+            bg_data, bg_branches = self._get_branches(structured_bg, 
+                    self.branches)
+            # branchlist_new should be the same for sig and bg.
             print('done.')
-
-            # if (sig_branches == bg_branches):
-            #     self.branches = sig_branches
 
             # TODO: implement control plots
             # print('Doing control plots, ', end='')
@@ -120,7 +116,8 @@ class GetBranches:
                     print('done.')
                     print('Further weights have been applied.')
                     name = self.arr_name + branchname + categories_name + '_weights{}'.format(weights_to_choose)
-                    self._save_array(sign,bgn, name)
+                    branches_name = branchlist.split('.')[0] + '_converted.txt'
+                    self._save_array(sign,bgn, name, sig_branches, branches_name)
 
 
     def _get_numbers(self, structured_array):
@@ -212,14 +209,14 @@ class GetBranches:
 
         bg_total = np.sum(numbers)
         total = n_sig_events + bg_total
-        keep_events = []
+        # keep_events = []
         keep_dict = dict()
         label_length = 1 + len(self.categories)
         for i in ['data', 'weights', 'labels']:
             keep_dict[i] = []
         if (label == 'sig'):
             for event in range(structured_array.shape[0]):
-                keep_events.append(event)
+                # keep_events.append(event)
                 keep_dict['data'].append(data_dict['data'][event])
                 if (weights_to_choose == 0):
                     keep_dict['weights'].append([1.0 / n_sig_events])
@@ -246,7 +243,7 @@ class GetBranches:
                 for i in range(len(self.categories)):
                     category = self.categories[i]
                     if self._check_category(TTPlusBB, TTPlusCC, category):
-                        keep_events.append(event)
+                        # keep_events.append(event)
                         keep_dict['data'].append(data_dict['data'][event])
                         if (weights_to_choose == 0):
                             keep_dict['weights'].append([1.0 / numbers[i]])
@@ -326,7 +323,7 @@ class GetBranches:
         return weights
 
 
-    def _save_array(self, sig, bg, name):
+    def _save_array(self, sig, bg, name, branches, branches_out):
         """Stacks data and saves the array to the given path.
 
         Arguments:
@@ -356,9 +353,9 @@ class GetBranches:
         ndarray = np.vstack((sig_arr, bg_arr))
         np.save(array_dir, ndarray)
 
-        with open(self.save_path + '/branches.txt','w') as f:
-            for branch in self.branches:
-                f.write(branch + '\n')
+        with open(branches_out,'w') as f:
+            for branch in branches:
+                f.write('{}\n'.format(branch))
         print('Done.')
 
 

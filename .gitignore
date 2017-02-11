@@ -1,8 +1,10 @@
 train_*.py
+training/
 get_branches/
 get_branches
 __pycache__
 filelist
+files*
 graph/
 data/
 *.pyc

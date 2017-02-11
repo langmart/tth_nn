@@ -1,4 +1,4 @@
-# A one-hot output vector multi layer perceptron classifier. Currently depends on
+# i one-hot output vector multi layer perceptron classifier. Currently depends on
 # a custom dataset class defined in higgs_dataset.py. It is also assumed that
 # there are no errors in the shape of the dataset.
 
@@ -26,7 +26,8 @@ class OneHotMLP:
     """
 
 
-    def __init__(self, n_features, h_layers, out_size, savedir, labels_text):
+    def __init__(self, n_features, h_layers, out_size, savedir, labels_text,
+            branchlist):
         """Initializes the Classifier.
 
         Arguments:
@@ -42,12 +43,12 @@ class OneHotMLP:
 
         Attributes:
         ----------------
-        name (str):
-            Name of the model.
         savedir (str):
             Path to the directory everything will be saved to.
-        trained (bool):
-            Flag whether the model has been trained or not.
+        labels_text (list):
+            List of strings containing the labels for the plots.
+        branchlist (list):
+            List of strings containing the branches used.
         """
 
         self.n_features = n_features
@@ -56,6 +57,7 @@ class OneHotMLP:
         self.name = savedir.rsplit('/')[-1]
         self.savedir = savedir
         self.labels_text = labels_text
+        self.branchlist = branchlist
 
         # check whether the model file exists
         if os.path.exists(self.savedir + '/{}.ckpt'.format(self.name)):
@@ -271,6 +273,7 @@ class OneHotMLP:
 
             cross_train_list = []
             cross_val_list = []
+            weights_list = []
             for epoch in range(epochs):
                 total_batches = int(train_data.n/batch_size)
                 epoch_loss = 0
@@ -280,6 +283,7 @@ class OneHotMLP:
                     _, train_loss, weights_for_plot = sess.run([train_step,
                         loss, weights], {x:train_x, y:train_y, w:train_w})
                     epoch_loss += train_loss
+                weights_list.append(weights)
                 train_losses.append(np.mean(epoch_loss))
                 train_data.shuffle()
 
@@ -314,15 +318,23 @@ class OneHotMLP:
                     elif ((epoch+1 - early_stopping['epoch']) > early_stop):
                         print(125*'-')
                         print('Early stopping invoked. '\
-                                'Achieced best validation score of '\
+                                'Achieved best validation score of '\
                                 '{:.4f} in epoch {}.'.format(
                                     early_stopping['val_acc'],
-                                    early_stopping['epoch']))
+                                    early_stopping['epoch']+1))
+                        best_epoch = early_stopping['epoch']
+                        self._plot_weight_matrices(weights_list[best_epoch],
+                                best_epoch, early='yes')
+                        self._plot_cross(cross_train_list[best_epoch],
+                                cross_val_list[best_epoch], best_epoch,
+                                early='yes')
+                        self._find_most_important_weights(weights_list[best_epoch])
                         break
                 else:
                     save_path = saver.save(sess, self.model_loc)
 
                 if (epoch % 10 == 0):
+                    self._find_most_important_weights(weights_list[epoch])
                     self._plot_loss(train_losses)
                     self._write_list(cross_train_list, 'train_cross')
                     self._write_list(cross_val_list, 'val_cross')
@@ -514,8 +526,8 @@ class OneHotMLP:
             f.write('Optimizer: {}\n'.format(self.optname))
             f.write('Learning rate {}\n'.format(self.learning_rate))
             if (self.optimizer_options):
-                f.write('Optimizer options: {}'.format(self.optimizer_options))
-            f.write('Number of epochs trained: {}'.format(early_stop['epoch']))
+                f.write('Optimizer options: {}\n'.format(self.optimizer_options))
+            f.write('Number of epochs trained: {}\n'.format(early_stop['epoch']))
             f.write('Validation accuracy: {}'.format(early_stop['val_acc']))
 
 
@@ -582,9 +594,9 @@ class OneHotMLP:
         plt.savefig(self.savedir + '/' + plt_name + '.png')
         plt.savefig(self.savedir + '/' + plt_name + '.eps')
         plt.clf()
+    
 
-
-    def _plot_cross(self, arr_train, arr_val, epoch):
+    def _plot_cross(self, arr_train, arr_val, epoch, early='no'):
         arr_train_float = np.zeros((arr_train.shape[0], arr_train.shape[1]),
             dtype = np.float32)
         arr_val_float = np.zeros((arr_val.shape[0], arr_val.shape[1]), dtype =
@@ -618,7 +630,11 @@ class OneHotMLP:
         ax.set_yticks(np.arange((y.shape[0] - 1)) + 0.5, minor=False)
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
-        plt.title("Heatmap: Training")
+        if (early=='yes'):
+            plt.title('Heatmap: Training after early stopping in \
+                    epoch{}'.format(epoch+1))
+        else:
+            plt.title("Heatmap: Training after epoch {}".format(epoch+1))
         plt.savefig(self.cross_savedir + '/{}_train.pdf'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train.png'.format(epoch))
@@ -634,7 +650,11 @@ class OneHotMLP:
         ax.set_yticks(np.arange((y.shape[0] - 1)) + 0.5, minor=False)
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
-        plt.title("Heatmap: Validation")
+        if (early=='yes'):
+            plt.title('Heatmap: Validation after early stopping in \
+                    epoch{}'.format(epoch+1))
+        else:
+            plt.title("Heatmap: Validation after epoch {}".format(epoch+1))
         plt.savefig(self.cross_savedir + '/{}_validation.pdf'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation.png'.format(epoch))
@@ -655,7 +675,11 @@ class OneHotMLP:
         ax.set_yticks(np.arange((y.shape[0] - 1)) + 0.5, minor=False)
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
-        plt.title("Heatmap: Training")
+        if (early=='yes'):
+            plt.title('Heatmap: Training after early stopping in \
+                    epoch{}'.format(epoch+1))
+        else:
+            plt.title("Heatmap: Training after epoch {}".format(epoch+1))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog.pdf'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog.png'.format(epoch))
@@ -674,7 +698,11 @@ class OneHotMLP:
         ax.set_yticks(np.arange((y.shape[0] - 1)) + 0.5, minor=False)
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
-        plt.title("Heatmap: Validation")
+        if (early=='yes'):
+            plt.title('Heatmap: Validation after early stopping in \
+                    epoch{}'.format(epoch+1))
+        else:
+            plt.title("Heatmap: Validation after epoch {}".format(epoch+1))
         plt.savefig(self.cross_savedir + '/{}_validation_colorlog.pdf'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation_colorlog.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation_colorlog.png'.format(epoch))
@@ -700,7 +728,11 @@ class OneHotMLP:
         ax.set_yticks(np.arange((y.shape[0] - 1)) + 0.5, minor=False)
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
-        plt.title("Heatmap: Training")
+        if (early=='yes'):
+            plt.title('Heatmap: Training after early stopping in \
+                    epoch{}'.format(epoch+1))
+        else:
+            plt.title("Heatmap: Training after epoch {}".format(epoch+1))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute.pdf'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute.png'.format(epoch))
@@ -724,31 +756,64 @@ class OneHotMLP:
         ax.set_yticks(np.arange((y.shape[0] - 1)) + 0.5, minor=False)
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
-        plt.title("Heatmap: Training")
+        if (early=='yes'):
+            plt.title('Heatmap: Validation after early stopping in \
+                    epoch{}'.format(epoch+1))
+        else:
+            plt.title("Heatmap: Validation after epoch {}".format(epoch+1))
         plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute.pdf'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute.png'.format(epoch))
         plt.clf()
 
 
-    def _plot_weight_matrices(self, w, epoch):
-        for i in range(len(w)):
-            weight = w[i]
-            np_weight = weight.eval()
+    def _plot_weight_matrices(self, w, epoch, early='no'):
+        # w_n = w
+        # for i in range(len(w_n)):
+        #     w_n[i] = w_n[i].eval()
+        # self._write_list(w_n, 'weights')
+        # self._write_list(w_n[0], 'first_weight')
+        np_weights = [weight.eval() for weight in w]
+        self._write_list(np_weights[0], 'first_weights')
+        self._write_list(np_weights, 'weights')
+        for i in range(len(np_weights)):
+            # weight = w[i]
+            np_weight = np_weights[i]
+            # np_weight = weight.eval()
             xr, yr = np_weight.shape
+            # xr, yr = weight.shape
             x = range(xr + 1)
             y = range(yr + 1)
             xn, yn = np.meshgrid(y,x)
+            # plt.pcolormesh(xn, yn, weight)
             plt.pcolormesh(xn, yn, np_weight)
             plt.colorbar()
+            # plt.xlim(0, weight.shape[1])
+            # plt.ylim(0, weight.shape[0])
             plt.xlim(0, np_weight.shape[1])
             plt.ylim(0, np_weight.shape[0])
             plt.xlabel('out')
             plt.ylabel('in')
-            title = "Heatmap: weight[{}], epoch: {}".format(i+1, epoch+1)
+            if (early=='yes'):
+                title = 'Heatmap: weight[{}] after early stopping in epoch \
+                {}'.format(i+1, epoch+1)
+            else:
+                title = "Heatmap: weight[{}], epoch: {}".format(i+1, epoch+1)
             plt.title(title)
-            plt.savefig(self.weights_savedir +
-                    '/epoch{}_weight{}.pdf'.format(epoch+1, i+1))
+            if (early=='yes'):
+                plt.savefig(self.weights_savedir + 
+                        '/epoch{}_weight{}_early.pdf'.format(epoch+1, i+1))
+                plt.savefig(self.weights_savedir + 
+                        '/epoch{}_weight{}_early.eps'.format(epoch+1, i+1))
+                plt.savefig(self.weights_savedir + 
+                        '/epoch{}_weight{}_early.png'.format(epoch+1, i+1))
+            else:
+                plt.savefig(self.weights_savedir + 
+                        '/epoch{}_weight{}.pdf'.format(epoch+1, i+1))
+                plt.savefig(self.weights_savedir + 
+                        '/epoch{}_weight{}.eps'.format(epoch+1, i+1))
+                plt.savefig(self.weights_savedir + 
+                        '/epoch{}_weight{}.png'.format(epoch+1, i+1))
             plt.clf()
 
 
@@ -894,4 +959,31 @@ class OneHotMLP:
             plt.savefig(self.mistag_savedir + 'val_as_x_{}.png'.format(i))
             plt.savefig(self.mistag_savedir + 'val_as_x_{}.eps'.format(i))
             plt.clf()
+
+    def _find_most_important_weights(self, w, n=10):
+        # Only consider the first hidden layer.
+        weight = w[0].eval()
+        weight = np.absolute(weight)
+        weight_abs_mean = np.mean(weight, axis=1, dtype=np.float32)
+        with open(self.branchlist, 'r') as f:
+            self.branches = [line.strip() for line in f]
+        max_weight = 0.0
+        values = []
+        indices = []
+        branchnames = []
+
+        for i in range(10):
+            index = np.argmax(weight_abs_mean)
+            indices.append(index)
+            values.append(weight_abs_mean[index])
+            branchnames.append(self.branches[index])
+            weight_abs_mean[index] = 0.0
+
+
+        with open (self.cross_savedir + '/most_important_variables.txt', 'w') as f:
+            for i in range(10):
+                f.write('branch: {}, mean_abs: {}\n'.format(branchnames[i],
+                    values[i]))
+
+
 
