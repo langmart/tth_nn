@@ -2,6 +2,8 @@ from __future__ import absolute_import, division, print_function
 import os
 import sys
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 #from root_numpy import root2array
 
@@ -117,6 +119,7 @@ class GetBranches:
                     print('Further weights have been applied.')
                     name = self.arr_name + branchname + categories_name + '_weights{}'.format(weights_to_choose)
                     branches_name = branchlist.split('.')[0] + '_converted.txt'
+
                     self._save_array(sign,bgn, name, sig_branches, branches_name)
 
 
@@ -318,8 +321,10 @@ class GetBranches:
         weights = np.prod(weights, axis=1).reshape(-1,1)
         weights /+ np.sum(weights)
 
-        
-
+        # i = np.random.randint(0,1000)
+        # with open(self.save_path + '/weights_{}.txt'.format(i), 'w') as f:
+        #     for weight in weights:
+        #         f.write('{}\n'.format(weight))
         return weights
 
 
@@ -345,11 +350,12 @@ class GetBranches:
         # print('Shape of bg[data]: {}'.format(bg['data'][1].shape))
         # print('Shape of bg[weights]: {}'.format(bg['weights'][1].shape))
 
-        print('Saving array to {}, '.format(array_dir), end='')
+        print('Saving array to {}...'.format(array_dir))
         
         sig_arr = np.hstack((sig['labels'], sig['data'], sig['weights']))
         bg_arr = np.hstack((bg['labels'], bg['data'], bg['weights']))
 
+        self._control_plot(sig_arr, bg_arr, branches, name)
         ndarray = np.vstack((sig_arr, bg_arr))
         np.save(array_dir, ndarray)
 
@@ -359,7 +365,7 @@ class GetBranches:
         print('Done.')
 
 
-    def _control_plot(self, sig, bg, branches):
+    def _control_plot(self, sig, bg, branches, name):
         """Plot histograms of all variables.
 
         Arguments:
@@ -371,12 +377,15 @@ class GetBranches:
         branches (list):
             List of variable names.
         """
-
-        plot_dir = self.save_path + '/control_plots' + name
+        print("    Drawing control plots.")
+        plot_dir = self.save_path + '/control_plots_' + name
         if not os.path.isdir(plot_dir):
             os.makedirs(plot_dir)
 
-        for variable in range(sig.shape[1]):
+        # print(branches)
+        print(sig.shape)
+        print(len(branches))
+        for variable in range(1 + len(self.categories), sig.shape[1]-1):
             # get bin edges
             sig_min, bg_min = np.amin(sig[:, variable]), np.amin(bg[:,
                 variable])
@@ -391,21 +400,24 @@ class GetBranches:
                 glob_max = sig_max
             else:
                 glob_max = bg_max
+            # print(glob_min, glob_max)
+            if (np.isfinite(glob_min) and np.isfinite(glob_max)):
+                bin_edges = np.linspace(glob_min, glob_max, 50)
 
-            bin_edges = np.linspace(glob_min, glob_max, 30)
-
-            n, bins, _ = plt.hist(sig[:, variable], bins = bin_edges, histtype =
-                    'step', normed = True, label='Signal', color = 'black')
-            n, bins, _ = plt.hist(bg[:, variable], bins = bin_edges, histtype =
-                    'step', normed = True, label = 'Background', color = 'red',
-                    ls='--')
-            plt.ylabel('normed to unit area')
-            plt.xlabel(branches[variable])
-            plt.legend(loc='best', frameon=False)
-            plt.savefig(plot_dir + '/' + branches[variable] + '.pdf')
-            plt.savefig(plot_dir + '/' + branches[variable] + '.png')
-            plt.savefig(plot_dir + '/' + branches[variable] + '.eps')
-            plt.clf()
+                n, bins, _ = plt.hist(sig[:, variable], bins = bin_edges, histtype =
+                        'step', normed = True, label='Signal', color = 'black')
+                n, bins, _ = plt.hist(bg[:, variable], bins = bin_edges, histtype =
+                        'step', normed = True, label = 'Background', color = 'red',
+                        ls='--')
+                var_rel = variable - (1 + len(self.categories))
+                plt.ylabel('normed to unit area')
+                plt.xlabel(branches[var_rel])
+                plt.legend(loc='best', frameon=False)
+                plt.savefig(plot_dir + '/' + branches[var_rel] + '.pdf')
+                # plt.savefig(plot_dir + '/' + branches[var_rel] + '.png')
+                # plt.savefig(plot_dir + '/' + branches[var_rel] + '.eps')
+                plt.clf()
+        print("    Done.")
 
 
     def _signal_label(self, label_length):
