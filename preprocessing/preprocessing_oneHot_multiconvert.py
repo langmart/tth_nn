@@ -92,6 +92,10 @@ class GetBranches:
             print('Calculating weights, ', end='')
             sig['weights'] = self._get_weights(structured_sig)
             bg['weights'] = self._get_weights(structured_bg)
+            # All sig_weights should be equal; same for bg_weights...
+            sig_weight_0 = (sig['weights'][0])[0]
+            bg_weight_0 = (bg['weights'][0])[0]
+            self._write_weights(sig_weight_0, bg_weight_0)
             print('done.')
 
             for categories in self.categories_list:
@@ -378,7 +382,7 @@ class GetBranches:
             List of variable names.
         """
         print("    Drawing control plots.")
-        plot_dir = self.save_path + '/control_plots_' + name
+        plot_dir = self.save_path + '/control_plots/' + name
         if not os.path.isdir(plot_dir):
             os.makedirs(plot_dir)
 
@@ -418,6 +422,12 @@ class GetBranches:
                 # plt.savefig(plot_dir + '/' + branches[var_rel] + '.eps')
                 plt.clf()
         print("    Done.")
+
+
+    def _write_weights(self, sig, bg):
+        with open (self.save_path + '/weights.txt', 'w') as f:
+            f.write('{}\n'.format(sig))
+            f.write('{}\n'.format(bg))
 
 
     def _signal_label(self, label_length):
