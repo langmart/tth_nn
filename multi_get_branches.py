@@ -10,7 +10,10 @@ ttbarSL_Odd = loaddir + 'ttbarSL_Odd.npy'
 # branchlists = ['branchlists/bdt.txt', 'branchlists/Jet_N_Evt.txt',
 #         'branchlists/branches_new.txt', 'branchlists/bdt_evt_jets.txt',
 #         'branchlists/bdt_and_weights.txt', 'branchlists/branches_corrected.txt']
-branchlists = ['branchlists/branches_new.txt', 'branchlists/branches_corrected.txt', 'branchlists/bdt.txt']
+branchlists = ['branchlists/branches_reduced.txt']
+# branchlists = ['branchlists/branches_new.txt',
+#         'branchlists/branches_corrected.txt', 'branchlists/bdt.txt',
+#         'branchlists/branches_reduced.txt']
 categories_list = [['30', '20', '10', '01', 'light'], ['30', 'light'], ['30', '20', '10', '01']]
 # define categories for background
 # '30': tt + bb
