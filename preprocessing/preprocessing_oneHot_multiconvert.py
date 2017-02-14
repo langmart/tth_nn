@@ -386,9 +386,6 @@ class GetBranches:
         if not os.path.isdir(plot_dir):
             os.makedirs(plot_dir)
 
-        # print(branches)
-        print(sig.shape)
-        print(len(branches))
         for variable in range(1 + len(self.categories), sig.shape[1]-1):
             # get bin edges
             sig_min, bg_min = np.amin(sig[:, variable]), np.amin(bg[:,
@@ -404,7 +401,6 @@ class GetBranches:
                 glob_max = sig_max
             else:
                 glob_max = bg_max
-            # print(glob_min, glob_max)
             if (np.isfinite(glob_min) and np.isfinite(glob_max)):
                 bin_edges = np.linspace(glob_min, glob_max, 50)
 

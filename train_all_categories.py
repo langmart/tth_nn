@@ -5,9 +5,11 @@ from MLP.onehot_mlp import OneHotMLP
 from DataFrame.data_frame import DataFrame
 
 
-trainpath='/storage/7/lang/nn_data/testing/converted/even_bdt_30_20_10_01_light_weights0.npy'
-valpath='/storage/7/lang/nn_data/testing/converted/odd_bdt_30_20_10_01_light_weights0.npy'
-weight_path = '/storage/7/lang/nn_data/testing/converted/weights.txt'
+trainpath='/storage/7/lang/nn_data/converted/even_branches_corrected_30_20_10_01_light_weights3.npy'
+valpath='/storage/7/lang/nn_data/converted/odd_branches_corrected_30_20_10_01_light_weights3.npy'
+weight_path = '/storage/7/lang/nn_data/converted/weights.txt'
+branchlist='branchlists/branches_corrected_converted.txt'
+exec_name = '3x200_equalcat_branches_corrected_all_cat_4'
 with open(weight_path, 'r') as f:
     weights = [line.strip() for line in f]
     sig_weight = np.float32(weights[0])
@@ -43,8 +45,6 @@ N_EPOCHS = 300
 early_stop = 10
 learning_rate = 1e-2
 hidden_layers = [200, 200, 200]
-branchlist='branchlists/branches_corrected_converted.txt'
-exec_name = '3x200_equalcat_branches_corrected_all_cat_1'
 model_location = outpath + exec_name
 labels = ['ttH', 'tt+bb', 'tt+2b', 'tt+b', 'tt+cc', 'tt+light']
 # Choose normalization from 'minmax' or 'gaussian'.
