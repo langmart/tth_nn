@@ -105,7 +105,7 @@ class GetBranches:
                 n_sig_events = sig['data'].shape[0]
                 n_bg_events = bg['data'].shape[0]
                 bg_numbers = self._get_numbers(structured_bg)
-                print(bg_numbers)
+                # print(bg_numbers)
 
 
                 categories_name = ''
@@ -129,7 +129,7 @@ class GetBranches:
 
     def _get_numbers(self, structured_array):
         category_numbers = np.zeros_like(self.categories, dtype=int)
-        print(category_numbers)
+        # print(category_numbers)
         for event in range(structured_array.shape[0]):
             TTPlusBB = structured_array[event]['GenEvt_I_TTPlusBB']
             TTPlusCC = structured_array[event]['GenEvt_I_TTPlusCC']
