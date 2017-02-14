@@ -5,10 +5,15 @@ from MLP.onehot_mlp import OneHotMLP
 from DataFrame.data_frame import DataFrame
 
 
-trainpath ='/storage/7/lang/nn_data/converted/without_light/even1_bdt.npy'
-valpath = '/storage/7/lang/nn_data/converted/without_light/odd1_bdt.npy'
-trainpath ='/storage/7/lang/nn_data/converted/without_light/even1_bdt_evt_jets.npy'
-valpath = '/storage/7/lang/nn_data/converted/without_light/odd1_bdt_evt_jets.npy'
+trainpath='/storage/7/lang/nn_data/converted/even_branches_corrected_30_20_10_01_weights3.npy'
+valpath='/storage/7/lang/nn_data/converted/odd_branches_corrected_30_20_10_01_weights3.npy'
+weight_path = '/storage/7/lang/nn_data/converted/weights.txt'
+branchlist='branchlists/branches_corrected_converted.txt'
+exec_name = '3x200_equalcat_branches_corrected_without_light_4'
+with open(weight_path, 'r') as f:
+    weights = [line.strip() for line in f]
+    sig_weight = np.float32(weights[0])
+    bg_weight = np.float32(weights[1])
 datestring = datetime.datetime.now().strftime("%Y_%m_%d")
 outpath = 'data/executed/' + datestring + '/'
 print('Loading data...')
@@ -36,11 +41,10 @@ beta = 1e-8
 # For information about these parameters please refer to the TensorFlow
 # documentation.
 outsize = 5
-N_EPOCHS = 40
+N_EPOCHS = 300
 early_stop = 10
 learning_rate = 1e-2
-hidden_layers = [200, 200, 200, 200, 200]
-exec_name = '5x200_equalcat_1bdt_without_light'
+hidden_layers = [200, 200, 200]
 model_location = outpath + exec_name
 labels = ['ttH', 'tt+bb', 'tt+2b', 'tt+b', 'tt+cc', 'tt+light']
 # Choose normalization from 'minmax' or 'gaussian'.
@@ -50,8 +54,9 @@ normalization = 'gaussian'
 train = DataFrame(train, out_size=outsize, normalization=normalization)
 val = DataFrame(val, out_size=outsize, normalization=normalization)
 
-cl = OneHotMLP(train.nfeatures, 
-        hidden_layers, outsize, model_location, labels_text=labels)
+cl = OneHotMLP(train.nfeatures, hidden_layers, outsize, model_location, 
+        labels_text=labels, branchlist=branchlist, sig_weight=sig_weight,
+        bg_weight=bg_weight)
 cl.train(train, val, optimizer=optname, epochs=N_EPOCHS, batch_size=5000, learning_rate=
         learning_rate, keep_prob=0.95, beta=beta, out_size=outsize,
         optimizer_options=optimizer_options, early_stop=early_stop)
