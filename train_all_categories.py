@@ -57,7 +57,7 @@ val = DataFrame(val, out_size=outsize, normalization=normalization)
 cl = OneHotMLP(train.nfeatures, hidden_layers, outsize, model_location, 
         labels_text=labels, branchlist=branchlist, sig_weight=sig_weight,
         bg_weight=bg_weight)
-cl.train(train, val, optimizer=optname, epochs=N_EPOCHS, batch_size=500, learning_rate=
+cl.train(train, val, optimizer=optname, epochs=N_EPOCHS, batch_size=20000, learning_rate=
         learning_rate, keep_prob=0.95, beta=beta, out_size=outsize,
         optimizer_options=optimizer_options, early_stop=early_stop)
 with open('{}/data_info.txt'.format(model_location), 'w') as out:

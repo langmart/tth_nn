@@ -241,7 +241,8 @@ class OneHotMLP:
             # l2_reg = 0.0
             l2_reg = beta * self._l2_regularization(weights)
             # loss = tf.reduce_mean(tf.mul(w, xentropy)) + l2_reg
-            loss = tf.reduce_mean(tf.reduce_sum(tf.mul(w, xentropy))) + l2_reg
+            loss = tf.add(tf.reduce_mean(tf.reduce_sum(tf.mul(w, xentropy))), l2_reg, 
+                    name='loss')
             # loss = tf.reduce_mean(np.sum(np.square(np.subtract(y,y_))))
             # optimizer
             optimizer = self._build_optimizer()
@@ -649,8 +650,7 @@ class OneHotMLP:
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
         if (early=='yes'):
-            plt.title('Heatmap: Training after early stopping in \
-                    epoch{}'.format(epoch))
+            plt.title('Heatmap: Training after early stopping in epoch{}'.format(epoch))
         else:
             plt.title("Heatmap: Training after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train.pdf'.format(epoch))
@@ -669,8 +669,7 @@ class OneHotMLP:
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
         if (early=='yes'):
-            plt.title('Heatmap: Validation after early stopping in \
-                    epoch{}'.format(epoch))
+            plt.title('Heatmap: Validation after early stopping in epoch{}'.format(epoch))
         else:
             plt.title("Heatmap: Validation after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation.pdf'.format(epoch))
@@ -694,8 +693,7 @@ class OneHotMLP:
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
         if (early=='yes'):
-            plt.title('Heatmap: Training after early stopping in \
-                    epoch{}'.format(epoch))
+            plt.title('Heatmap: Training after early stopping in epoch{}'.format(epoch))
         else:
             plt.title("Heatmap: Training after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog.pdf'.format(epoch))
@@ -717,8 +715,7 @@ class OneHotMLP:
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
         if (early=='yes'):
-            plt.title('Heatmap: Validation after early stopping in \
-                    epoch{}'.format(epoch))
+            plt.title('Heatmap: Validation after early stopping in epoch{}'.format(epoch))
         else:
             plt.title("Heatmap: Validation after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation_colorlog.pdf'.format(epoch))
@@ -747,8 +744,7 @@ class OneHotMLP:
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
         if (early=='yes'):
-            plt.title('Heatmap: Training after early stopping in \
-                    epoch{}'.format(epoch))
+            plt.title('Heatmap: Training after early stopping in epoch{}'.format(epoch))
         else:
             plt.title("Heatmap: Training after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute.pdf'.format(epoch))
@@ -775,8 +771,7 @@ class OneHotMLP:
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
         if (early=='yes'):
-            plt.title('Heatmap: Validation after early stopping in \
-                    epoch{}'.format(epoch))
+            plt.title('Heatmap: Validation after early stopping in epoch{}'.format(epoch))
         else:
             plt.title("Heatmap: Validation after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute.pdf'.format(epoch))
@@ -806,8 +801,7 @@ class OneHotMLP:
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
         if (early=='yes'):
-            plt.title('Heatmap: Training after early stopping in \
-                    epoch{}'.format(epoch))
+            plt.title('Heatmap: Training after early stopping in epoch{}'.format(epoch))
         else:
             plt.title("Heatmap: Training after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute_weights.pdf'.format(epoch))
@@ -834,8 +828,7 @@ class OneHotMLP:
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
         if (early=='yes'):
-            plt.title('Heatmap: Validation after early stopping in \
-                    epoch{}'.format(epoch))
+            plt.title('Heatmap: Validation after early stopping in epoch{}'.format(epoch))
         else:
             plt.title("Heatmap: Validation after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute_weights.pdf'.format(epoch))
