@@ -23,8 +23,6 @@ class GetBranches:
         A list filled with the branches from branchlist.
     save_path (str):
         Path to the directory the processed array will be saved to.
-    arr_name (str):
-        Name of the new array.
     """
 
     def __init__(self):
@@ -45,11 +43,36 @@ class GetBranches:
 
 
     def process(self, signal_path, background_path, arr_name, savedir,
-            branchlists, categories_list=[['30', '20', '10', '01', 'light']]):
+            branchlists, categories_list=[['30', '20', '10', '01', 'light']],
+            preselection='no'):
+        """Extracts the selected branches and categories from the numpy array
+        and adds labels as well as event weights. Preselection criteria are also
+        applied.
+
+        Arguments:
+        ----------------
+        signal_path (string):
+            Path to the numpy array containing the signal events.
+        background_path (string):
+            Path to the numpy array containing the background events.
+        arr_name (string):
+            Name of the new array.
+        savedir (string):
+            Path to the directory to which the converted array will be saved.
+        branchlists (list of strings):
+            List of paths to branchlists to extract from the data.
+        categories_list (list of lists of strings):
+            List containing all category lists.
+        preselection (string):
+            If 'strong' or 'weak', preselection will be applied.
+        """
+
+
         self.categories_list = categories_list
         self.branchlists = branchlists
         self.arr_name = arr_name
         self.save_path = savedir
+        self.preselection = preselection
 
         print('Loading: {} '.format(signal_path), end='')
         structured_sig = np.load(signal_path, encoding='latin1')
@@ -62,6 +85,16 @@ class GetBranches:
         if not os.path.isdir(self.save_path):
             os.makedirs(self.save_path)
             print("Created directory {}.".format(self.save_path))
+        
+        if not (preselection == 'no'):
+            print('Doing preselection...')
+            print(' Signal events before preselection: {}'.format(structured_sig.shape[0]))
+            structured_sig = self._do_preselection(structured_sig)
+            print(' Signal events after preselection: {}'.format(structured_sig.shape[0]))
+            print(' Background events before preselection: {}'.format(structured_bg.shape[0]))
+            structured_bg = self._do_preselection(structured_bg)
+            print(' Background events after preselection: {}'.format(structured_bg.shape[0]))
+            print('Done.')
         
         for branchlist in branchlists:
 
@@ -121,7 +154,10 @@ class GetBranches:
                     'bg', bg_numbers, n_sig_events, weights_to_choose)
                     print('done.')
                     print('Further weights have been applied.')
-                    name = self.arr_name + branchname + categories_name + '_weights{}'.format(weights_to_choose)
+                    if (preselection == 'no'):
+                        name = self.arr_name + branchname + categories_name + '_weights{}'.format(weights_to_choose)
+                    else:
+                        name = self.arr_name + branchname + categories_name + '_weights{}_preselection_{}'.format(weights_to_choose, preselection)
                     branches_name = branchlist.split('.')[0] + '_converted.txt'
 
                     self._save_array(sign,bgn, name, sig_branches, branches_name)
@@ -140,6 +176,25 @@ class GetBranches:
         return category_numbers
             
 
+    def _do_preselection(self, structured_array):
+        """Applies the preselection 'N_Jets>=6' && 'N_BTagsM>=3'.
+
+        Arguments:
+        ----------------
+        structured_array (numpy structured array):
+            Array containing the data to be preselected.
+        """
+        indices = []
+        for i in range(structured_array.shape[0]):
+            if (structured_array['N_Jets'][i] >= 6):
+                if (self.preselection == 'weak'):
+                    if (structured_array['N_BTagsM'][i] >= 3):
+                        indices.append(i)
+                elif (self.preselection == 'strong'):
+                    if (structured_array['N_BTagsM'][i] >= 4):
+                        indices.append(i)
+        ndarray = structured_array[indices]
+        return ndarray
 
 
     def _get_branches(self, structured_array, branches):
@@ -359,13 +414,13 @@ class GetBranches:
         sig_arr = np.hstack((sig['labels'], sig['data'], sig['weights']))
         bg_arr = np.hstack((bg['labels'], bg['data'], bg['weights']))
 
-        self._control_plot(sig_arr, bg_arr, branches, name)
         ndarray = np.vstack((sig_arr, bg_arr))
         np.save(array_dir, ndarray)
 
         with open(branches_out,'w') as f:
             for branch in branches:
                 f.write('{}\n'.format(branch))
+        self._control_plot(sig_arr, bg_arr, branches, name)
         print('Done.')
 
 
