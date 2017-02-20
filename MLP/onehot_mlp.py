@@ -309,7 +309,7 @@ class OneHotMLP:
             weights_list = []
             for epoch in range(epochs):
                 if (self.batch_decay == 'yes'):
-                    batch_size = int(batch_size * (self.batch_decay_rate ** (epoch /
+                    batch_size = int(batch_size * (self.batch_decay_rate ** (1.0 /
                         self.batch_decay_steps)))
                 print(batch_size)
                 total_batches = int(train_data.n/batch_size)
@@ -461,6 +461,7 @@ class OneHotMLP:
 
 
     def _build_optimizer(self):
+        self.initial_learning_rate = self.learning_rate
         """Returns a TensorFlow Optimizer.
         """
         global_step = tf.Variable(0, trainable=False)
@@ -539,7 +540,7 @@ class OneHotMLP:
             optimizer = tf.train.MomentumOptimizer(self.learning_rate,
                     momentum=momentum, use_nesterov=use_nesterov)
             print('Building Momentum Optimizer.')
-            print('     learning_rate: {}'.format(self.learning_rate))
+            print('     initial learning_rate: {}'.format(self.initial_learning_rate))
             print('     momentum: {}'.format(momentum))
             print('     use_nesterov: {}'.format(use_nesterov))
         else:
@@ -575,7 +576,7 @@ class OneHotMLP:
             f.write('L2 Regularization: {}\n'.format(beta))
             f.write('Training Time: {} sec.\n'.format(time))
             f.write('Optimizer: {}\n'.format(self.optname))
-            f.write('Learning rate {}\n'.format(self.learning_rate))
+            f.write('Initial learning rate {}\n'.format(self.initial_learning_rate))
             if (self.optimizer_options):
                 f.write('Optimizer options: {}\n'.format(self.optimizer_options))
             f.write('Number of epochs trained: {}\n'.format(early_stop['epoch']))
