@@ -5,11 +5,11 @@ from MLP.onehot_mlp import OneHotMLP
 from DataFrame.data_frame import DataFrame
 
 
-trainpath='/storage/7/lang/nn_data/converted/even_branches_reduced_30_20_10_01_light_weights3.npy'
-valpath='/storage/7/lang/nn_data/converted/odd_branches_reduced_30_20_10_01_light_weights3.npy'
+trainpath='/storage/7/lang/nn_data/converted/even_branches_corrected_30_20_10_01_light_weights1_preselection_weak.npy'
+valpath='/storage/7/lang/nn_data/converted/odd_branches_corrected_30_20_10_01_light_weights1_preselection_weak.npy'
 weight_path = '/storage/7/lang/nn_data/converted/weights.txt'
-branchlist='branchlists/branches_reduced_converted.txt'
-exec_name = '3x200_equalcat_branches_reduced_all_cat_4'
+branchlist='branchlists/branches_corrected_converted.txt'
+exec_name = '3x200_equalcat_branches_corrected_preselected_weak_all_cat_2'
 with open(weight_path, 'r') as f:
     weights = [line.strip() for line in f]
     sig_weight = np.float32(weights[0])
@@ -57,9 +57,10 @@ val = DataFrame(val, out_size=outsize, normalization=normalization)
 cl = OneHotMLP(train.nfeatures, hidden_layers, outsize, model_location, 
         labels_text=labels, branchlist=branchlist, sig_weight=sig_weight,
         bg_weight=bg_weight)
-cl.train(train, val, optimizer=optname, epochs=N_EPOCHS, batch_size=20000, learning_rate=
+cl.train(train, val, optimizer=optname, epochs=N_EPOCHS, batch_size=4000, learning_rate=
         learning_rate, keep_prob=0.95, beta=beta, out_size=outsize,
-        optimizer_options=optimizer_options, early_stop=early_stop)
+        optimizer_options=optimizer_options, early_stop=early_stop,
+        decay_learning_rate='no')
 with open('{}/data_info.txt'.format(model_location), 'w') as out:
     out.write('Training data: {}\n'.format(trainpath))
     out.write('Validation data: {}\n'.format(valpath))

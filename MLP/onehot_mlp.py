@@ -1,4 +1,4 @@
-# i one-hot output vector multi layer perceptron classifier. Currently depends on
+# A one-hot output vector multi layer perceptron classifier. Currently depends on
 # a custom dataset class defined in higgs_dataset.py. It is also assumed that
 # there are no errors in the shape of the dataset.
 
@@ -14,7 +14,7 @@ import os
 import sys
 import time
 import pickle
-os.environ['CUDA_VISIBLE_DEVICES'] = "2,3"
+os.environ['CUDA_VISIBLE_DEVICES'] = "2"
 
 # from sklearn.metrics import roc_auc_score, roc_curve
 
@@ -188,7 +188,8 @@ class OneHotMLP:
 
     def train(self, train_data, val_data, optimizer='Adam', epochs = 10, batch_size = 100,
             learning_rate = 1e-3, keep_prob = 0.9, beta = 0.0, out_size=6,
-            optimizer_options=[], early_stop=10):
+            optimizer_options=[], early_stop=10, decay_learning_rate='no', 
+            dlrate_options=[], batch_decay='no', batch_decay_options=[]):
         """Trains the classifier
 
         Arguments:
@@ -217,11 +218,34 @@ class OneHotMLP:
         early_stop (int):
             If validation accuracy does not increase over 10 epochs the training
             process will be ended and only the best model will be saved.
+        decay_learning_rate (string):
+            Indicates whether to decay the learning rate.
+        dlrate_options (list):
+            Options for exponential learning rate decay.
+        batch_decay (string):
+            Indicates whether to decay the batch size.
+        batch_decay_options (list):
+            Options for exponential batch size decay.
         """
 
         self.optname = optimizer
         self.learning_rate = learning_rate
         self.optimizer_options = optimizer_options
+        self.decay_learning_rate = decay_learning_rate
+        self.decay_learning_rate_options = dlrate_options
+        self.batch_decay = batch_decay
+        self.batch_decay_options = batch_decay_options
+
+        if (self.batch_decay == 'yes'):
+            try:
+                self.batch_decay_rate = batch_decay_options[0]
+            except IndexError:
+                self.batch_decay_rate = 0.95
+            try:
+                self.batch_decay_steps = batch_decay_options[1]
+            except IndexError:
+                # Batch size decreases over 10 epochs
+                self.batch_decay_steps = 10
 
         train_graph = tf.Graph()
         with train_graph.as_default():
@@ -245,8 +269,9 @@ class OneHotMLP:
                     name='loss')
             # loss = tf.reduce_mean(np.sum(np.square(np.subtract(y,y_))))
             # optimizer
-            optimizer = self._build_optimizer()
-            train_step = optimizer.minimize(loss)
+
+            optimizer, global_step = self._build_optimizer()
+            train_step = optimizer.minimize(loss, global_step=global_step)
 
             # initialize all variables
             init = tf.initialize_all_variables()
@@ -255,7 +280,7 @@ class OneHotMLP:
         
         # Non-static memory management; memory can be allocated on the fly.
         sess_config = tf.ConfigProto()
-        sess_config.gpu_options.per_process_gpu_memory_fraction = 0.25
+        sess_config.gpu_options.per_process_gpu_memory_fraction = 0.3
         # sess_config.gpu_options.allow_growth = True
         
         with tf.Session(config=sess_config, graph=train_graph) as sess:
@@ -283,6 +308,10 @@ class OneHotMLP:
             cross_val_list = []
             weights_list = []
             for epoch in range(epochs):
+                if (self.batch_decay == 'yes'):
+                    batch_size = int(batch_size * (self.batch_decay_rate ** (epoch /
+                        self.batch_decay_steps)))
+                print(batch_size)
                 total_batches = int(train_data.n/batch_size)
                 epoch_loss = 0
                 for _ in range(total_batches):
@@ -434,6 +463,20 @@ class OneHotMLP:
     def _build_optimizer(self):
         """Returns a TensorFlow Optimizer.
         """
+        global_step = tf.Variable(0, trainable=False)
+        
+        if (self.decay_learning_rate == 'yes'):
+            try:
+                self.decay_rate = self.decay_learning_rate_options[0]
+            except IndexError:
+                self.decay_rate = 0.97
+            try:
+                self.decay_steps = self.decay_learning_rate_options[1]
+            except IndexError:
+                self.decay_steps = 300
+            self.learning_rate = (tf.train.exponential_decay(self.learning_rate,
+                global_step, decay_rate=self.decay_rate, decay_steps=self.decay_steps))
+        
         if (self.optname == 'Adam'):
             try:
                 beta1 = self.optimizer_options[0]
@@ -503,7 +546,7 @@ class OneHotMLP:
             print('No Optimizer with name {} has been implemented.'
                     .format(self.optname))
             sys.exit('Aborting.')
-        return optimizer
+        return optimizer, global_step
 
     def _onehot(self, arr, length):
         # TODO
@@ -536,7 +579,14 @@ class OneHotMLP:
             if (self.optimizer_options):
                 f.write('Optimizer options: {}\n'.format(self.optimizer_options))
             f.write('Number of epochs trained: {}\n'.format(early_stop['epoch']))
-            f.write('Validation accuracy: {}'.format(early_stop['val_acc']))
+            if (self.decay_learning_rate == 'yes'):
+                f.write('Learning rate decay rate: {}\n'.format(self.decay_rate))
+                f.write('Learning rate decay steps: {}\n'.format(self.decay_steps))
+            if (self.batch_decay == 'yes'):
+                f.write('Batch decay rate: {}\n'.format(self.batch_decay_rate))
+                f.write('Batch decay steps: {}\n'.format(self.batch_decay_steps))
+            f.write('Best validation epoch: {}\n'.format(early_stop['epoch']))
+            f.write('Best validation accuracy: {}'.format(early_stop['val_acc']))
 
 
     def _plot_loss(self, train_loss):
