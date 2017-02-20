@@ -309,7 +309,7 @@ class OneHotMLP:
             weights_list = []
             for epoch in range(epochs):
                 if (self.batch_decay == 'yes'):
-                    batch_size = int(batch_size * (self.batch_decay_rate ** (epoch /
+                    batch_size = int(batch_size * (self.batch_decay_rate ** (1.0 /
                         self.batch_decay_steps)))
                 print(batch_size)
                 total_batches = int(train_data.n/batch_size)
