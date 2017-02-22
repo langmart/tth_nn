@@ -27,7 +27,7 @@ class OneHotMLP:
 
 
     def __init__(self, n_features, h_layers, out_size, savedir, labels_text,
-            branchlist, sig_weight, bg_weight):
+            branchlist, sig_weight, bg_weight, act_func='relu'):
         """Initializes the Classifier.
 
         Arguments:
@@ -53,6 +53,8 @@ class OneHotMLP:
             Weight of ttH events.
         bg_weight (float):
             Weight of ttbar events.
+        act_func (string):
+            Activation function.
         """
 
         self.n_features = n_features
@@ -64,6 +66,7 @@ class OneHotMLP:
         self.branchlist = branchlist
         self.sig_weight = sig_weight
         self.bg_weight = bg_weight
+        self.act_func = act_func
 
         # check whether the model file exists
         if os.path.exists(self.savedir + '/{}.ckpt'.format(self.name)):
@@ -110,14 +113,6 @@ class OneHotMLP:
         weights = [tf.Variable(tf.random_normal([n_features, h_layers[0]], 
             stddev=tf.sqrt(2.0/n_features)), name = 'W_1')]
         biases = [tf.Variable(tf.zeros([h_layers[0]]), name = 'B_1')]
-        # biases = [tf.Variable(tf.random_normal([h_layers[0]], stddev =
-        #     tf.sqrt(2.0 / (h_layers[0]))), name = 'B_1')]
-        # biases = [tf.Variable(tf.fill(dims=[h_layers[0]], value=0.1), name='B_1')]
-
-        # weights = [tf.Variable(tf.random_uniform([n_features, h_layers[0]],
-        #     minval=0.0, maxval=1.0), name='W_1')]
-        # biases = [tf.Variable(tf.random_uniform([h_layers[0]], minval = 0.0,
-        #     maxval = 1.0), name = 'B_1')]
 
 
         # if more than 1 hidden layer -> create additional weights and biases
@@ -128,28 +123,11 @@ class OneHotMLP:
                     'W_{}'.format(i+1)))
                 biases.append(tf.Variable(tf.zeros([h_layers[i]]), name =
                     'B_{}'.format(i+1)))
-                # biases.append(tf.Variable(tf.random_normal([h_layers[i]], stddev
-                #     = tf.sqrt(2.0 / h_layers[i])), name = 'B_{}'.format(i+1)))
-                # weights.append(tf.Variable(tf.random_uniform([h_layers[i-1],
-                #     h_layers[i]], minval = 0.0, maxval = 1.0), name =
-                #     'W_{}'.format(i+1)))
-                # biases.append(tf.Variable(tf.random_uniform([h_layers[i]],
-                #     minval = 0.0, maxval = 1.0), name = 'B_{}'.format(i+1)))
-                # biases.append(tf.Variable(tf.fill(dims=[h_layers[i]],
-                #     value=0.1), name='B_{}'.format(i+1)))
 
         # connect the last hidden layer to the output layer
         weights.append(tf.Variable(tf.random_normal([h_layers[-1], self.out_size],
             stddev = tf.sqrt(2.0/h_layers[-1])), name = 'W_out'))
         biases.append(tf.Variable(tf.zeros([self.out_size]), name = 'B_out'))
-        # biases.append(tf.Variable(tf.random_normal([self.out_size], stddev
-        #     = tf.sqrt(2.0 / self.out_size)), name = 'B_out'))
-        # weights.append(tf.Variable(tf.random_uniform([h_layers[-1],
-        #     self.out_size], minval = 0.0, maxval = 1.0), name = 'W_out'))
-        # biases.append(tf.Variable(tf.random_uniform([self.out_size], minval =
-        #     0.0, maxval = 1.0), name = 'B_out'))
-        # biases.append(tf.Variable(tf.fill(dims=[self.out_size], value=0.1),
-        #     name='B_out'))
         
         return weights, biases
 
@@ -171,25 +149,24 @@ class OneHotMLP:
             Prediction of the model.
         """
 
-        layer = tf.nn.dropout(tf.nn.relu(tf.matmul(data, W[0]) + B[0]),
+        self.act = self._build_activation_function()
+        layer = tf.nn.dropout(self.act(tf.matmul(data, W[0]) + B[0]),
                 keep_prob)
         # if more the 1 hidden layer -> generate output via multiple weight
         # matrices 
         if len(self.h_layers) > 1:
             for weight, bias in zip(W[1:-1], B[1:-1]):
-                layer = tf.nn.dropout(tf.nn.relu(tf.matmul(layer, weight) +
+                layer = tf.nn.dropout(self.act(tf.matmul(layer, weight) +
                     bias), keep_prob)
 
         out = tf.matmul(layer, W[-1]) + B[-1]
-        # return tf.nn.softplus(out)
-        # return tf.nn.sigmoid(out)
-        # return tf.nn.relu(out)
         return out
 
     def train(self, train_data, val_data, optimizer='Adam', epochs = 10, batch_size = 100,
-            learning_rate = 1e-3, keep_prob = 0.9, beta = 0.0, out_size=6,
-            optimizer_options=[], early_stop=10, decay_learning_rate='no', 
-            dlrate_options=[], batch_decay='no', batch_decay_options=[]):
+            learning_rate = 1e-3, keep_prob = 0.9, beta = 0.0, out_size=6, 
+            optimizer_options=[], enable_early='no', early_stop=10, 
+            decay_learning_rate='no', dlrate_options=[], batch_decay='no', 
+            batch_decay_options=[]):
         """Trains the classifier
 
         Arguments:
@@ -215,8 +192,10 @@ class OneHotMLP:
         optimizer_options (list):
             List of additional options for the optimizer; can have different
             data types for different optimizers.
+        enably_early (string):
+            Check whether to use early stopping.
         early_stop (int):
-            If validation accuracy does not increase over 10 epochs the training
+            If validation accuracy does not increase over some epochs the training
             process will be ended and only the best model will be saved.
         decay_learning_rate (string):
             Indicates whether to decay the learning rate.
@@ -231,6 +210,8 @@ class OneHotMLP:
         self.optname = optimizer
         self.learning_rate = learning_rate
         self.optimizer_options = optimizer_options
+        self.enable_early = enable_early
+        self.early_stop = early_stop
         self.decay_learning_rate = decay_learning_rate
         self.decay_learning_rate_options = dlrate_options
         self.batch_decay = batch_decay
@@ -257,19 +238,15 @@ class OneHotMLP:
 
             # prediction
             y_ = self._model(x, weights, biases, keep_prob)
+            # prediction for validation
             yy_ = tf.nn.softmax(self._model(x, weights, biases))
-            # loss function
-            # xentropy = - (tf.mul(y, tf.log(y_ + 1e-10)) + tf.mul(1-y, tf.log(1-y_ + 1e-10)))
-            # xentropy = tf.reduce_sum(tf.mul( - y, tf.log(y_ + 1e-10)))
-            xentropy = tf.nn.softmax_cross_entropy_with_logits(y_,y)
-            # l2_reg = 0.0
+            # Cross entropy
+            xentropy = tf.nn.softmax_cross_entropy_with_logits(labels=y,logits=y_)
             l2_reg = beta * self._l2_regularization(weights)
-            # loss = tf.reduce_mean(tf.mul(w, xentropy)) + l2_reg
             loss = tf.add(tf.reduce_mean(tf.reduce_sum(tf.mul(w, xentropy))), l2_reg, 
                     name='loss')
-            # loss = tf.reduce_mean(np.sum(np.square(np.subtract(y,y_))))
+            
             # optimizer
-
             optimizer, global_step = self._build_optimizer()
             train_step = optimizer.minimize(loss, global_step=global_step)
 
@@ -280,7 +257,7 @@ class OneHotMLP:
         
         # Non-static memory management; memory can be allocated on the fly.
         sess_config = tf.ConfigProto()
-        sess_config.gpu_options.per_process_gpu_memory_fraction = 0.3
+        sess_config.gpu_options.per_process_gpu_memory_fraction = 0.28
         # sess_config.gpu_options.allow_growth = True
         
         with tf.Session(config=sess_config, graph=train_graph) as sess:
@@ -311,7 +288,7 @@ class OneHotMLP:
                 if (self.batch_decay == 'yes'):
                     batch_size = int(batch_size * (self.batch_decay_rate ** (1.0 /
                         self.batch_decay_steps)))
-                print(batch_size)
+                # print(batch_size)
                 total_batches = int(train_data.n/batch_size)
                 epoch_loss = 0
                 for _ in range(total_batches):
@@ -346,13 +323,13 @@ class OneHotMLP:
                 train_cats.append(train_cat)
                 val_cats.append(val_cat)
 
-                if early_stop:
+                if (self.enable_early=='yes'):
                     # Check for early stopping.
                     if (val_accuracy[-1] > early_stopping['val_acc']):
                         save_path = saver.save(sess, self.model_loc)
                         early_stopping['val_acc'] = val_accuracy[-1]
                         early_stopping['epoch'] = epoch + 1
-                    elif ((epoch+1 - early_stopping['epoch']) > early_stop):
+                    elif ((epoch+1 - early_stopping['epoch']) > self.early_stop):
                         print(125*'-')
                         print('Early stopping invoked. '\
                                 'Achieved best validation score of '\
@@ -393,7 +370,7 @@ class OneHotMLP:
                     val_cats, epochs)
             self._plot_loss(train_losses)
             self._write_parameters(epochs, batch_size, keep_prob, beta,
-                    (train_end - train_start), early_stopping)
+                    (train_end - train_start), early_stopping, val_accuracy[-1])
             self._plot_weight_matrices(weights, epoch)
             self._plot_cross(train_cross, val_cross, epoch + 1)
             self._plot_hists(train_pre, val_pre, epoch)
@@ -403,6 +380,8 @@ class OneHotMLP:
             self._write_list(train_losses, 'train_losses')
             self._write_list(train_accuracy, 'train_accuracy')
             self._write_list(val_accuracy, 'val_accuracy')
+            if not (self.enable_early == 'yes'):
+                self._find_most_important_weights(weights)
             self.trained = True
 
             print('Model saved in: \n{}'.format(self.savedir))
@@ -549,6 +528,21 @@ class OneHotMLP:
             sys.exit('Aborting.')
         return optimizer, global_step
 
+
+    def _build_activation_function(self):
+        """Returns the activation function."""
+        if (self.act_func == 'tanh'):
+            return tf.tanh
+        elif (self.act_func == 'elu'):
+            return tf.nn.elu
+        elif (self.act_func == 'sigmoid'):
+            return tf.sigmoid
+        elif (self.act_func == 'softplus'):
+            return tf.nn.softplus
+        else:
+            return tf.nn.relu
+
+
     def _onehot(self, arr, length):
         # TODO
         dummy_array = arr
@@ -565,7 +559,7 @@ class OneHotMLP:
 
 
     def _write_parameters(self, epochs, batch_size, keep_prob, beta, time,
-            early_stop):
+            early_stop, val_acc_last):
         """Writes network parameters in a .txt. file
         """
 
@@ -576,7 +570,8 @@ class OneHotMLP:
             f.write('L2 Regularization: {}\n'.format(beta))
             f.write('Training Time: {} sec.\n'.format(time))
             f.write('Optimizer: {}\n'.format(self.optname))
-            f.write('Initial learning rate {}\n'.format(self.initial_learning_rate))
+            f.write('Initial learning rate: {}\n'.format(self.initial_learning_rate))
+            f.write('Activation function: {}\n'.format(self.act_func))
             if (self.optimizer_options):
                 f.write('Optimizer options: {}\n'.format(self.optimizer_options))
             f.write('Number of epochs trained: {}\n'.format(early_stop['epoch']))
@@ -586,9 +581,12 @@ class OneHotMLP:
             if (self.batch_decay == 'yes'):
                 f.write('Batch decay rate: {}\n'.format(self.batch_decay_rate))
                 f.write('Batch decay steps: {}\n'.format(self.batch_decay_steps))
-            f.write('Best validation epoch: {}\n'.format(early_stop['epoch']))
-            f.write('Best validation accuracy: {}'.format(early_stop['val_acc']))
-
+            if (self.enable_early == 'yes'):
+                f.write('Early stopping interval: {}\n'.format(self.early_stop))
+                f.write('Best validation epoch: {}\n'.format(early_stop['epoch']))
+                f.write('Best validation accuracy: {}'.format(early_stop['val_acc']))
+            else:
+                f.write('Last validation accuracy: {}'.format(val_acc_last))
 
     def _plot_loss(self, train_loss):
         """Plot loss of training and validation data.
