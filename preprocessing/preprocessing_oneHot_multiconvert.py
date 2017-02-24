@@ -86,7 +86,7 @@ class GetBranches:
             os.makedirs(self.save_path)
             print("Created directory {}.".format(self.save_path))
         
-        if not (preselection == 'no'):
+        if not (self.preselection == 'no'):
             print('Doing preselection...')
             print(' Signal events before preselection: {}'.format(structured_sig.shape[0]))
             structured_sig = self._do_preselection(structured_sig)
