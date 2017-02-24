@@ -11,10 +11,11 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import numpy as np
 import os
+import datetime
 import sys
 import time
 import pickle
-os.environ['CUDA_VISIBLE_DEVICES'] = "2,3"
+os.environ['CUDA_VISIBLE_DEVICES'] = "2"
 
 # from sklearn.metrics import roc_auc_score, roc_curve
 
@@ -27,7 +28,7 @@ class OneHotMLP:
 
 
     def __init__(self, n_features, h_layers, out_size, savedir, labels_text,
-            branchlist):
+            branchlist, sig_weight, bg_weight, act_func='relu'):
         """Initializes the Classifier.
 
         Arguments:
@@ -49,6 +50,12 @@ class OneHotMLP:
             List of strings containing the labels for the plots.
         branchlist (list):
             List of strings containing the branches used.
+        sig_weight (float):
+            Weight of ttH events.
+        bg_weight (float):
+            Weight of ttbar events.
+        act_func (string):
+            Activation function.
         """
 
         self.n_features = n_features
@@ -58,6 +65,9 @@ class OneHotMLP:
         self.savedir = savedir
         self.labels_text = labels_text
         self.branchlist = branchlist
+        self.sig_weight = sig_weight
+        self.bg_weight = bg_weight
+        self.act_func = act_func
 
         # check whether the model file exists
         if os.path.exists(self.savedir + '/{}.ckpt'.format(self.name)):
@@ -104,14 +114,6 @@ class OneHotMLP:
         weights = [tf.Variable(tf.random_normal([n_features, h_layers[0]], 
             stddev=tf.sqrt(2.0/n_features)), name = 'W_1')]
         biases = [tf.Variable(tf.zeros([h_layers[0]]), name = 'B_1')]
-        # biases = [tf.Variable(tf.random_normal([h_layers[0]], stddev =
-        #     tf.sqrt(2.0 / (h_layers[0]))), name = 'B_1')]
-        # biases = [tf.Variable(tf.fill(dims=[h_layers[0]], value=0.1), name='B_1')]
-
-        # weights = [tf.Variable(tf.random_uniform([n_features, h_layers[0]],
-        #     minval=0.0, maxval=1.0), name='W_1')]
-        # biases = [tf.Variable(tf.random_uniform([h_layers[0]], minval = 0.0,
-        #     maxval = 1.0), name = 'B_1')]
 
 
         # if more than 1 hidden layer -> create additional weights and biases
@@ -122,28 +124,11 @@ class OneHotMLP:
                     'W_{}'.format(i+1)))
                 biases.append(tf.Variable(tf.zeros([h_layers[i]]), name =
                     'B_{}'.format(i+1)))
-                # biases.append(tf.Variable(tf.random_normal([h_layers[i]], stddev
-                #     = tf.sqrt(2.0 / h_layers[i])), name = 'B_{}'.format(i+1)))
-                # weights.append(tf.Variable(tf.random_uniform([h_layers[i-1],
-                #     h_layers[i]], minval = 0.0, maxval = 1.0), name =
-                #     'W_{}'.format(i+1)))
-                # biases.append(tf.Variable(tf.random_uniform([h_layers[i]],
-                #     minval = 0.0, maxval = 1.0), name = 'B_{}'.format(i+1)))
-                # biases.append(tf.Variable(tf.fill(dims=[h_layers[i]],
-                #     value=0.1), name='B_{}'.format(i+1)))
 
         # connect the last hidden layer to the output layer
         weights.append(tf.Variable(tf.random_normal([h_layers[-1], self.out_size],
             stddev = tf.sqrt(2.0/h_layers[-1])), name = 'W_out'))
         biases.append(tf.Variable(tf.zeros([self.out_size]), name = 'B_out'))
-        # biases.append(tf.Variable(tf.random_normal([self.out_size], stddev
-        #     = tf.sqrt(2.0 / self.out_size)), name = 'B_out'))
-        # weights.append(tf.Variable(tf.random_uniform([h_layers[-1],
-        #     self.out_size], minval = 0.0, maxval = 1.0), name = 'W_out'))
-        # biases.append(tf.Variable(tf.random_uniform([self.out_size], minval =
-        #     0.0, maxval = 1.0), name = 'B_out'))
-        # biases.append(tf.Variable(tf.fill(dims=[self.out_size], value=0.1),
-        #     name='B_out'))
         
         return weights, biases
 
@@ -165,24 +150,24 @@ class OneHotMLP:
             Prediction of the model.
         """
 
-        layer = tf.nn.dropout(tf.nn.relu(tf.matmul(data, W[0]) + B[0]),
+        self.act = self._build_activation_function()
+        layer = tf.nn.dropout(self.act(tf.matmul(data, W[0]) + B[0]),
                 keep_prob)
         # if more the 1 hidden layer -> generate output via multiple weight
         # matrices 
         if len(self.h_layers) > 1:
             for weight, bias in zip(W[1:-1], B[1:-1]):
-                layer = tf.nn.dropout(tf.nn.relu(tf.matmul(layer, weight) +
+                layer = tf.nn.dropout(self.act(tf.matmul(layer, weight) +
                     bias), keep_prob)
 
         out = tf.matmul(layer, W[-1]) + B[-1]
-        # return tf.nn.softplus(out)
-        # return tf.nn.sigmoid(out)
-        # return tf.nn.relu(out)
         return out
 
     def train(self, train_data, val_data, optimizer='Adam', epochs = 10, batch_size = 100,
             learning_rate = 1e-3, keep_prob = 0.9, beta = 0.0, out_size=3,
-            optimizer_options=[], early_stop=10):
+            optimizer_options=[], enable_early='no', early_stop=10, 
+            decay_learning_rate='no', dlrate_options=[], batch_decay='no', 
+            batch_decay_options=[]):
         """Trains the classifier
 
         Arguments:
@@ -208,14 +193,41 @@ class OneHotMLP:
         optimizer_options (list):
             List of additional options for the optimizer; can have different
             data types for different optimizers.
+        enably_early (string):
+            Check whether to use early stopping.
         early_stop (int):
-            If validation accuracy does not increase over 10 epochs the training
+            If validation accuracy does not increase over some epochs the training
             process will be ended and only the best model will be saved.
+        decay_learning_rate (string):
+            Indicates whether to decay the learning rate.
+        dlrate_options (list):
+            Options for exponential learning rate decay.
+        batch_decay (string):
+            Indicates whether to decay the batch size.
+        batch_decay_options (list):
+            Options for exponential batch size decay.
         """
 
         self.optname = optimizer
         self.learning_rate = learning_rate
         self.optimizer_options = optimizer_options
+        self.enable_early = enable_early
+        self.early_stop = early_stop
+        self.decay_learning_rate = decay_learning_rate
+        self.decay_learning_rate_options = dlrate_options
+        self.batch_decay = batch_decay
+        self.batch_decay_options = batch_decay_options
+
+        if (self.batch_decay == 'yes'):
+            try:
+                self.batch_decay_rate = batch_decay_options[0]
+            except IndexError:
+                self.batch_decay_rate = 0.95
+            try:
+                self.batch_decay_steps = batch_decay_options[1]
+            except IndexError:
+                # Batch size decreases over 10 epochs
+                self.batch_decay_steps = 10
 
         train_graph = tf.Graph()
         with train_graph.as_default():
@@ -227,19 +239,19 @@ class OneHotMLP:
 
             # prediction
             y_ = self._model(x, weights, biases, keep_prob)
+            # prediction for validation
             yy_ = tf.nn.softmax(self._model(x, weights, biases))
-            # loss function
-            # xentropy = - (tf.mul(y, tf.log(y_ + 1e-10)) + tf.mul(1-y, tf.log(1-y_ + 1e-10)))
-            # xentropy = tf.reduce_sum(tf.mul( - y, tf.log(y_ + 1e-10)))
-            xentropy = tf.nn.softmax_cross_entropy_with_logits(y_,y)
-            # l2_reg = 0.0
+            # Cross entropy
+            xentropy = tf.nn.softmax_cross_entropy_with_logits(labels=y,logits=y_)
             l2_reg = beta * self._l2_regularization(weights)
-            # loss = tf.reduce_mean(tf.mul(w, xentropy)) + l2_reg
-            loss = tf.reduce_mean(tf.reduce_sum(tf.mul(w, xentropy))) + l2_reg
-            # loss = tf.reduce_mean(np.sum(np.square(np.subtract(y,y_))))
+            # loss = tf.add(tf.reduce_mean(tf.reduce_sum(tf.mul(w, xentropy))), l2_reg, 
+            #         name='loss')
+            loss = tf.add(tf.reduce_sum(tf.mul(w, xentropy)), l2_reg, 
+                    name='loss')
+            
             # optimizer
-            optimizer = self._build_optimizer()
-            train_step = optimizer.minimize(loss)
+            optimizer, global_step = self._build_optimizer()
+            train_step = optimizer.minimize(loss, global_step=global_step)
 
             # initialize all variables
             init = tf.initialize_all_variables()
@@ -248,7 +260,8 @@ class OneHotMLP:
         
         # Non-static memory management; memory can be allocated on the fly.
         sess_config = tf.ConfigProto()
-        sess_config.gpu_options.allow_growth = True
+        sess_config.gpu_options.per_process_gpu_memory_fraction = 0.28
+        # sess_config.gpu_options.allow_growth = True
         
         with tf.Session(config=sess_config, graph=train_graph) as sess:
             self.model_loc = self.savedir + '/{}.ckpt'.format(self.name)
@@ -275,14 +288,21 @@ class OneHotMLP:
             cross_val_list = []
             weights_list = []
             for epoch in range(epochs):
+                if (self.batch_decay == 'yes'):
+                    batch_size = int(batch_size * (self.batch_decay_rate ** (1.0 /
+                        self.batch_decay_steps)))
+                # print(batch_size)
                 total_batches = int(train_data.n/batch_size)
                 epoch_loss = 0
                 for _ in range(total_batches):
                     # train in batches
                     train_x, train_y, train_w=train_data.next_batch(batch_size)
-                    _, train_loss, weights_for_plot = sess.run([train_step,
-                        loss, weights], {x:train_x, y:train_y, w:train_w})
+                    _, train_loss, weights_for_plot, yps = sess.run([train_step,
+                        loss, weights, y_], {x:train_x, y:train_y, w:train_w})
                     epoch_loss += train_loss
+                    # print(yps)
+                    # print(yps.shape)
+                    # print(loss.get_shape())
                 weights_list.append(weights)
                 train_losses.append(np.mean(epoch_loss))
                 train_data.shuffle()
@@ -309,13 +329,13 @@ class OneHotMLP:
                 train_cats.append(train_cat)
                 val_cats.append(val_cat)
 
-                if early_stop:
+                if (self.enable_early=='yes'):
                     # Check for early stopping.
                     if (val_accuracy[-1] > early_stopping['val_acc']):
                         save_path = saver.save(sess, self.model_loc)
                         early_stopping['val_acc'] = val_accuracy[-1]
                         early_stopping['epoch'] = epoch + 1
-                    elif ((epoch+1 - early_stopping['epoch']) > early_stop):
+                    elif ((epoch+1 - early_stopping['epoch']) > self.early_stop):
                         print(125*'-')
                         print('Early stopping invoked. '\
                                 'Achieved best validation score of '\
@@ -356,7 +376,7 @@ class OneHotMLP:
                     val_cats, epochs)
             self._plot_loss(train_losses)
             self._write_parameters(epochs, batch_size, keep_prob, beta,
-                    (train_end - train_start), early_stopping)
+                    (train_end - train_start), early_stopping, val_accuracy[-1])
             self._plot_weight_matrices(weights, epoch)
             self._plot_cross(train_cross, val_cross, epoch + 1)
             self._plot_hists(train_pre, val_pre, epoch)
@@ -366,6 +386,8 @@ class OneHotMLP:
             self._write_list(train_losses, 'train_losses')
             self._write_list(train_accuracy, 'train_accuracy')
             self._write_list(val_accuracy, 'val_accuracy')
+            if not (self.enable_early == 'yes'):
+                self._find_most_important_weights(weights)
             self.trained = True
 
             print('Model saved in: \n{}'.format(self.savedir))
@@ -397,24 +419,15 @@ class OneHotMLP:
         ----------------
 
         """
-        pred_onehot = self._onehot(pred, len(pred))
-        # print (pred_onehot[0], labels[0])
-        correct = 0
-        mistag = 0
 
         arr_cross = np.zeros((self.out_size, self.out_size),dtype=np.int)
-        for i in range(pred_onehot.shape[0]):
-            equal = True
-            index_true = np.argmax(labels[i])
-            index_pred = np.argmax(pred_onehot[i])
-            arr_cross[index_true][index_pred] += 1
-            for j in range(pred_onehot.shape[1]):
-                if (pred_onehot[i][j] != labels[i][j]):
-                    equal = False
-            if (equal == True):
-                correct += 1
-            else:
-                mistag += 1
+        index_true = np.argmax(labels, axis=1)
+        index_pred = np.argmax(pred, axis=1)
+        for i in range(index_true.shape[0]):
+            arr_cross[index_true[i]][index_pred[i]] += 1
+        equal = (index_true == index_pred)
+        correct = np.count_nonzero(equal)
+        mistag = equal.shape[0] - correct
         cat_acc = np.zeros((self.out_size), dtype=np.float32)
         for i in range(self.out_size): 
             cat_acc[i] = arr_cross[i][i] / (np.sum(arr_cross, axis=1)[i])
@@ -424,8 +437,23 @@ class OneHotMLP:
 
 
     def _build_optimizer(self):
+        self.initial_learning_rate = self.learning_rate
         """Returns a TensorFlow Optimizer.
         """
+        global_step = tf.Variable(0, trainable=False)
+        
+        if (self.decay_learning_rate == 'yes'):
+            try:
+                self.decay_rate = self.decay_learning_rate_options[0]
+            except IndexError:
+                self.decay_rate = 0.97
+            try:
+                self.decay_steps = self.decay_learning_rate_options[1]
+            except IndexError:
+                self.decay_steps = 300
+            self.learning_rate = (tf.train.exponential_decay(self.learning_rate,
+                global_step, decay_rate=self.decay_rate, decay_steps=self.decay_steps))
+        
         if (self.optname == 'Adam'):
             try:
                 beta1 = self.optimizer_options[0]
@@ -488,48 +516,75 @@ class OneHotMLP:
             optimizer = tf.train.MomentumOptimizer(self.learning_rate,
                     momentum=momentum, use_nesterov=use_nesterov)
             print('Building Momentum Optimizer.')
-            print('     learning_rate: {}'.format(self.learning_rate))
+            print('     initial learning_rate: {}'.format(self.initial_learning_rate))
             print('     momentum: {}'.format(momentum))
             print('     use_nesterov: {}'.format(use_nesterov))
         else:
             print('No Optimizer with name {} has been implemented.'
                     .format(self.optname))
             sys.exit('Aborting.')
-        return optimizer
+        return optimizer, global_step
 
-    def _onehot(self, arr, length):
-        # TODO
-        dummy_array = arr
-        for i in range(arr.shape[0]):
-            arr2 = dummy_array[i]
-            ind = np.argmax(arr2)
-            for j in range(arr2.shape[0]):
-                if (j == ind):
-                    arr2[j] = 1.0
-                else:
-                    arr2[j] = 0.0
-            dummy_array[i] = arr2
-        return dummy_array
+
+    def _build_activation_function(self):
+        """Returns the activation function."""
+        if (self.act_func == 'tanh'):
+            return tf.tanh
+        elif (self.act_func == 'elu'):
+            return tf.nn.elu
+        elif (self.act_func == 'sigmoid'):
+            return tf.sigmoid
+        elif (self.act_func == 'softplus'):
+            return tf.nn.softplus
+        else:
+            return tf.nn.relu
+
+
+    # def _onehot(self, arr, length):
+    #     """Converts an array to onehot format."""
+    #     for i in range(arr.shape[0]):
+    #         arr2 = arr[i]
+    #         ind = np.argmax(arr2)
+    #         for j in range(arr2.shape[0]):
+    #             if (j == ind):
+    #                 arr2[j] = 1.0
+    #             else:
+    #                 arr2[j] = 0.0
+    #         arr[i] = arr2
+    #     return arr
 
 
     def _write_parameters(self, epochs, batch_size, keep_prob, beta, time,
-            early_stop):
+            early_stop, val_acc_last):
         """Writes network parameters in a .txt. file
         """
 
         with open('{}/info.txt'.format(self.savedir),'w') as f:
+            f.write('Date: {}\n'.format(datetime.datetime.now().strftime("%Y_%m_%d")))
+            f.write('Time: {}\n'.format(datetime.datetime.now().strftime("%H_%M_%S")))
             f.write('Training Epochs: {}\n'.format(epochs))
             f.write('Batch Size: {}\n'.format(batch_size))
             f.write('Dropout: {}\n'.format(keep_prob))
             f.write('L2 Regularization: {}\n'.format(beta))
             f.write('Training Time: {} sec.\n'.format(time))
             f.write('Optimizer: {}\n'.format(self.optname))
-            f.write('Learning rate {}\n'.format(self.learning_rate))
+            f.write('Initial learning rate: {}\n'.format(self.initial_learning_rate))
+            f.write('Activation function: {}\n'.format(self.act_func))
             if (self.optimizer_options):
                 f.write('Optimizer options: {}\n'.format(self.optimizer_options))
             f.write('Number of epochs trained: {}\n'.format(early_stop['epoch']))
-            f.write('Validation accuracy: {}'.format(early_stop['val_acc']))
-
+            if (self.decay_learning_rate == 'yes'):
+                f.write('Learning rate decay rate: {}\n'.format(self.decay_rate))
+                f.write('Learning rate decay steps: {}\n'.format(self.decay_steps))
+            if (self.batch_decay == 'yes'):
+                f.write('Batch decay rate: {}\n'.format(self.batch_decay_rate))
+                f.write('Batch decay steps: {}\n'.format(self.batch_decay_steps))
+            if (self.enable_early == 'yes'):
+                f.write('Early stopping interval: {}\n'.format(self.early_stop))
+                f.write('Best validation epoch: {}\n'.format(early_stop['epoch']))
+                f.write('Best validation accuracy: {}'.format(early_stop['val_acc']))
+            else:
+                f.write('Last validation accuracy: {}'.format(val_acc_last))
 
     def _plot_loss(self, train_loss):
         """Plot loss of training and validation data.
@@ -601,25 +656,38 @@ class OneHotMLP:
             dtype = np.float32)
         arr_val_float = np.zeros((arr_val.shape[0], arr_val.shape[1]), dtype =
                 np.float32)
+        arr_train_w_weights = np.zeros((arr_train.shape[0], arr_train.shape[1]),
+            dtype = np.float32)
+        arr_val_w_weights = np.zeros((arr_val.shape[0], arr_val.shape[1]), dtype
+                = np.float32)
         for i in range(arr_train.shape[0]):
             row_sum = 0
             for j in range(arr_train.shape[1]):
                 row_sum += arr_train[i][j]
             for j in range(arr_train.shape[1]):
                 arr_train_float[i][j] = arr_train[i][j] / row_sum
+                if (i == 0):
+                    arr_train_w_weights[i][j] = 1.0 * arr_train[i][j] * self.sig_weight
+                else:
+                    arr_train_w_weights[i][j] = 1.0 * arr_train[i][j] * self.bg_weight
         for i in range(arr_val.shape[0]):
             row_sum = 0
             for j in range(arr_val.shape[1]):
                 row_sum += arr_val[i][j]
             for j in range(arr_val.shape[1]):
                 arr_val_float[i][j] = arr_val[i][j] / row_sum
+                if (i == 0):
+                    arr_val_w_weights[i][j] = 1.0 * arr_val[i][j] * self.sig_weight
+                else:
+                    arr_val_w_weights[i][j] = 1.0 * arr_val[i][j] * self.bg_weight
         print(arr_train)
         print('-----------------')
         print(arr_val)
         x = np.linspace(0, self.out_size, self.out_size + 1)
         y = np.linspace(0, self.out_size, self.out_size + 1)
         xn, yn = np.meshgrid(x,y)
-        plt.pcolormesh(xn, yn, arr_train_float, vmin=0.0, vmax=1.0)
+        cmap = matplotlib.cm.RdYlBu_r
+        plt.pcolormesh(xn, yn, arr_train_float, cmap=cmap, vmin=0.0, vmax=1.0)
         plt.colorbar()
         plt.xlim(0, self.out_size)
         plt.ylim(0, self.out_size)
@@ -631,15 +699,15 @@ class OneHotMLP:
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
         if (early=='yes'):
-            plt.title('Heatmap: Training after early stopping in \
-                    epoch{}'.format(epoch+1))
+            plt.title('Heatmap: Training after early stopping in epoch{}'.format(epoch))
         else:
-            plt.title("Heatmap: Training after epoch {}".format(epoch+1))
+            plt.title("Heatmap: Training after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train.pdf'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train.png'.format(epoch))
         plt.clf()
-        plt.pcolormesh(xn, yn, arr_val_float, vmin=0.0, vmax=1.0)
+        cmap = matplotlib.cm.RdYlBu_r
+        plt.pcolormesh(xn, yn, arr_val_float, cmap=cmap, vmin=0.0, vmax=1.0)
         plt.colorbar()
         plt.xlim(0, self.out_size)
         plt.ylim(0, self.out_size)
@@ -651,20 +719,20 @@ class OneHotMLP:
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
         if (early=='yes'):
-            plt.title('Heatmap: Validation after early stopping in \
-                    epoch{}'.format(epoch+1))
+            plt.title('Heatmap: Validation after early stopping in epoch{}'.format(epoch))
         else:
-            plt.title("Heatmap: Validation after epoch {}".format(epoch+1))
+            plt.title("Heatmap: Validation after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation.pdf'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation.png'.format(epoch))
         plt.clf()
         
         # Draw again with LogNorm colors
-        cmap = matplotlib.cm.jet
-        cmap.set_bad((0,0,1))
-        plt.pcolormesh(xn, yn, arr_train_float, cmap=cmap, norm=colors.LogNorm(vmin=1e-6,
-            vmax=1.0))
+        cmap = matplotlib.cm.RdYlBu_r
+        cmap.set_bad(color='white')
+        minimum, maximum = find_limits(arr_train_float)
+        plt.pcolormesh(xn, yn, arr_train_float, cmap=cmap,
+                norm=colors.LogNorm(vmin=max(minimum, 1e-6), vmax=maximum))
         plt.colorbar()
         plt.xlim(0, self.out_size)
         plt.ylim(0, self.out_size)
@@ -676,18 +744,18 @@ class OneHotMLP:
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
         if (early=='yes'):
-            plt.title('Heatmap: Training after early stopping in \
-                    epoch{}'.format(epoch+1))
+            plt.title('Heatmap: Training after early stopping in epoch{}'.format(epoch))
         else:
-            plt.title("Heatmap: Training after epoch {}".format(epoch+1))
+            plt.title("Heatmap: Training after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog.pdf'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog.png'.format(epoch))
         plt.clf()
-        cmap = matplotlib.cm.jet
-        cmap.set_bad((0,0,1))
-        plt.pcolormesh(xn, yn, arr_val_float, cmap=cmap, norm=colors.LogNorm(vmin=1e-6,
-            vmax=1.0))
+        cmap = matplotlib.cm.RdYlBu_r
+        cmap.set_bad(color='white')
+        minimum, maximum = find_limits(arr_val_float)
+        plt.pcolormesh(xn, yn, arr_val_float, cmap=cmap,
+                norm=colors.LogNorm(vmin=max(minimum,1e-6), vmax=maximum))
         plt.colorbar()
         plt.xlim(0, self.out_size)
         plt.ylim(0, self.out_size)
@@ -699,20 +767,20 @@ class OneHotMLP:
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
         if (early=='yes'):
-            plt.title('Heatmap: Validation after early stopping in \
-                    epoch{}'.format(epoch+1))
+            plt.title('Heatmap: Validation after early stopping in epoch{}'.format(epoch))
         else:
-            plt.title("Heatmap: Validation after epoch {}".format(epoch+1))
+            plt.title("Heatmap: Validation after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation_colorlog.pdf'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation_colorlog.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation_colorlog.png'.format(epoch))
         plt.clf()
 
         # Draw again with absolute numbers
-        cmap = matplotlib.cm.jet
-        cmap.set_bad('w')
+        cmap = matplotlib.cm.RdYlBu_r
+        cmap.set_bad(color='white')
+        minimum, maximum = find_limits(arr_train)
         plt.pcolormesh(xn, yn, arr_train, cmap=cmap, norm=colors.LogNorm(
-            vmin=1, vmax=np.max(arr_train)))
+            vmin=max(minimum, 1e-6), vmax=maximum))
         plt.colorbar()
         plt.xlim(0, self.out_size)
         plt.ylim(0, self.out_size)
@@ -729,18 +797,18 @@ class OneHotMLP:
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
         if (early=='yes'):
-            plt.title('Heatmap: Training after early stopping in \
-                    epoch{}'.format(epoch+1))
+            plt.title('Heatmap: Training after early stopping in epoch{}'.format(epoch))
         else:
-            plt.title("Heatmap: Training after epoch {}".format(epoch+1))
+            plt.title("Heatmap: Training after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute.pdf'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute.png'.format(epoch))
         plt.clf()
-        cmap = matplotlib.cm.jet
-        cmap.set_bad('w')
+        cmap = matplotlib.cm.RdYlBu_r
+        cmap.set_bad(color='white')
+        minimum, maximum = find_limits(arr_val)
         plt.pcolormesh(xn, yn, arr_val, cmap=cmap, norm=colors.LogNorm(
-            vmin=1, vmax=np.max(arr_val)))
+            vmin=max(minimum, 1e-6), vmax=maximum))
         plt.colorbar()
         plt.xlim(0, self.out_size)
         plt.ylim(0, self.out_size)
@@ -757,39 +825,86 @@ class OneHotMLP:
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
         if (early=='yes'):
-            plt.title('Heatmap: Validation after early stopping in \
-                    epoch{}'.format(epoch+1))
+            plt.title('Heatmap: Validation after early stopping in epoch{}'.format(epoch))
         else:
-            plt.title("Heatmap: Validation after epoch {}".format(epoch+1))
+            plt.title("Heatmap: Validation after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute.pdf'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute.png'.format(epoch))
         plt.clf()
 
+        # Draw again with absolute numbers and weights
+        cmap = matplotlib.cm.RdYlBu_r
+        cmap.set_bad(color='white')
+        minimum, maximum = find_limits(arr_train_w_weights)
+        plt.pcolormesh(xn, yn, arr_train_w_weights, cmap=cmap, norm=colors.LogNorm(
+            vmin=max(minimum, 1e-6), vmax=maximum))
+        plt.colorbar()
+        plt.xlim(0, self.out_size)
+        plt.ylim(0, self.out_size)
+        
+        plt.xlabel("Predicted")
+        plt.ylabel("True")
+        for yit in range(arr_train_w_weights.shape[0]):
+            for xit in range(arr_train_w_weights.shape[1]):
+                plt.text(xit + 0.5, yit + 0.5, '%.2f' % arr_train_w_weights[yit, xit], 
+                        horizontalalignment='center', verticalalignment='center',)
+        ax = plt.gca()
+        ax.set_xticks(np.arange((x.shape[0] - 1)) + 0.5, minor=False)
+        ax.set_yticks(np.arange((y.shape[0] - 1)) + 0.5, minor=False)
+        ax.set_xticklabels(self.labels_text)
+        ax.set_yticklabels(self.labels_text)
+        if (early=='yes'):
+            plt.title('Heatmap: Training after early stopping in epoch{}'.format(epoch))
+        else:
+            plt.title("Heatmap: Training after epoch {}".format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute_weights.pdf'.format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute_weights.eps'.format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute_weights.png'.format(epoch))
+        plt.clf()
+        cmap = matplotlib.cm.RdYlBu_r
+        cmap.set_bad(color='white')
+        minimum, maximum = find_limits(arr_val_w_weights)
+        plt.pcolormesh(xn, yn, arr_val_w_weights, cmap=cmap, norm=colors.LogNorm(
+            vmin=max(minimum, 1e-6), vmax=maximum))
+        plt.colorbar()
+        plt.xlim(0, self.out_size)
+        plt.ylim(0, self.out_size)
+        
+        plt.xlabel("Predicted")
+        plt.ylabel("True")
+        for yit in range(arr_val_w_weights.shape[0]):
+            for xit in range(arr_val_w_weights.shape[1]):
+                plt.text(xit + 0.5, yit + 0.5, '%.2f' % arr_val_w_weights[yit, xit], 
+                        horizontalalignment='center', verticalalignment='center',)
+        ax = plt.gca()
+        ax.set_xticks(np.arange((x.shape[0] - 1)) + 0.5, minor=False)
+        ax.set_yticks(np.arange((y.shape[0] - 1)) + 0.5, minor=False)
+        ax.set_xticklabels(self.labels_text)
+        ax.set_yticklabels(self.labels_text)
+        if (early=='yes'):
+            plt.title('Heatmap: Validation after early stopping in epoch{}'.format(epoch))
+        else:
+            plt.title("Heatmap: Validation after epoch {}".format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute_weights.pdf'.format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute_weights.eps'.format(epoch))
+        plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute_weights.png'.format(epoch))
+        plt.clf()
+
+
 
     def _plot_weight_matrices(self, w, epoch, early='no'):
-        # w_n = w
-        # for i in range(len(w_n)):
-        #     w_n[i] = w_n[i].eval()
-        # self._write_list(w_n, 'weights')
-        # self._write_list(w_n[0], 'first_weight')
         np_weights = [weight.eval() for weight in w]
         self._write_list(np_weights[0], 'first_weights')
         self._write_list(np_weights, 'weights')
         for i in range(len(np_weights)):
-            # weight = w[i]
             np_weight = np_weights[i]
-            # np_weight = weight.eval()
             xr, yr = np_weight.shape
-            # xr, yr = weight.shape
             x = range(xr + 1)
             y = range(yr + 1)
             xn, yn = np.meshgrid(y,x)
-            # plt.pcolormesh(xn, yn, weight)
             plt.pcolormesh(xn, yn, np_weight)
             plt.colorbar()
-            # plt.xlim(0, weight.shape[1])
-            # plt.ylim(0, weight.shape[0])
             plt.xlim(0, np_weight.shape[1])
             plt.ylim(0, np_weight.shape[0])
             plt.xlabel('out')
@@ -986,4 +1101,7 @@ class OneHotMLP:
                     values[i]))
 
 
-
+def find_limits(arr):
+    minimum = np.min(arr) / (np.pi**2.0 * np.exp(1.0)**2.0)
+    maximum = np.max(arr) * np.pi**2.0 * np.exp(1.0)**2.0
+    return minimum, maximum
