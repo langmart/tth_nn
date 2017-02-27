@@ -244,10 +244,12 @@ class OneHotMLP:
             # Cross entropy
             xentropy = tf.nn.softmax_cross_entropy_with_logits(labels=y,logits=y_)
             l2_reg = beta * self._l2_regularization(weights)
+            w_2 = tf.mul(100.0, (tf.cast(tf.equal(tf.argmax(y_, dimension=1),0),
+                tf.float32)) * (1.0 - tf.cast(tf.equal(tf.argmax(y,
+                    dimension=1),0), tf.float32))) + 1.0
             # loss = tf.add(tf.reduce_mean(tf.reduce_sum(tf.mul(w, xentropy))), l2_reg, 
             #         name='loss')
-            loss = tf.add(tf.reduce_sum(tf.mul(w, xentropy)), l2_reg, 
-                    name='loss')
+            loss = tf.add(tf.reduce_sum(tf.mul(w_2, tf.mul(w, xentropy))), l2_reg, name='loss')
             
             # optimizer
             optimizer, global_step = self._build_optimizer()
@@ -686,7 +688,8 @@ class OneHotMLP:
         x = np.linspace(0, self.out_size, self.out_size + 1)
         y = np.linspace(0, self.out_size, self.out_size + 1)
         xn, yn = np.meshgrid(x,y)
-        plt.pcolormesh(xn, yn, arr_train_float, vmin=0.0, vmax=1.0)
+        cmap = matplotlib.cm.RdYlBu_r
+        plt.pcolormesh(xn, yn, arr_train_float, cmap=cmap, vmin=0.0, vmax=1.0)
         plt.colorbar()
         plt.xlim(0, self.out_size)
         plt.ylim(0, self.out_size)
@@ -705,7 +708,8 @@ class OneHotMLP:
         plt.savefig(self.cross_savedir + '/{}_train.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train.png'.format(epoch))
         plt.clf()
-        plt.pcolormesh(xn, yn, arr_val_float, vmin=0.0, vmax=1.0)
+        cmap = matplotlib.cm.RdYlBu_r
+        plt.pcolormesh(xn, yn, arr_val_float, cmap=cmap, vmin=0.0, vmax=1.0)
         plt.colorbar()
         plt.xlim(0, self.out_size)
         plt.ylim(0, self.out_size)
@@ -726,10 +730,11 @@ class OneHotMLP:
         plt.clf()
         
         # Draw again with LogNorm colors
-        cmap = matplotlib.cm.RdYlBu
+        cmap = matplotlib.cm.RdYlBu_r
         cmap.set_bad(color='white')
-        plt.pcolormesh(xn, yn, arr_train_float, cmap=cmap, norm=colors.LogNorm(vmin=1e-6,
-            vmax=1.0))
+        minimum, maximum = find_limits(arr_train_float)
+        plt.pcolormesh(xn, yn, arr_train_float, cmap=cmap,
+                norm=colors.LogNorm(vmin=max(minimum, 1e-6), vmax=maximum))
         plt.colorbar()
         plt.xlim(0, self.out_size)
         plt.ylim(0, self.out_size)
@@ -748,10 +753,11 @@ class OneHotMLP:
         plt.savefig(self.cross_savedir + '/{}_train_colorlog.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog.png'.format(epoch))
         plt.clf()
-        cmap = matplotlib.cm.RdYlBu
+        cmap = matplotlib.cm.RdYlBu_r
         cmap.set_bad(color='white')
-        plt.pcolormesh(xn, yn, arr_val_float, cmap=cmap, norm=colors.LogNorm(vmin=1e-6,
-            vmax=1.0))
+        minimum, maximum = find_limits(arr_val_float)
+        plt.pcolormesh(xn, yn, arr_val_float, cmap=cmap,
+                norm=colors.LogNorm(vmin=max(minimum,1e-6), vmax=maximum))
         plt.colorbar()
         plt.xlim(0, self.out_size)
         plt.ylim(0, self.out_size)
@@ -772,10 +778,11 @@ class OneHotMLP:
         plt.clf()
 
         # Draw again with absolute numbers
-        cmap = matplotlib.cm.RdYlBu
+        cmap = matplotlib.cm.RdYlBu_r
         cmap.set_bad(color='white')
+        minimum, maximum = find_limits(arr_train)
         plt.pcolormesh(xn, yn, arr_train, cmap=cmap, norm=colors.LogNorm(
-            vmin=1, vmax=np.max(arr_train)))
+            vmin=max(minimum, 1e-6), vmax=maximum))
         plt.colorbar()
         plt.xlim(0, self.out_size)
         plt.ylim(0, self.out_size)
@@ -799,10 +806,11 @@ class OneHotMLP:
         plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute.png'.format(epoch))
         plt.clf()
-        cmap = matplotlib.cm.RdYlBu
+        cmap = matplotlib.cm.RdYlBu_r
         cmap.set_bad(color='white')
+        minimum, maximum = find_limits(arr_val)
         plt.pcolormesh(xn, yn, arr_val, cmap=cmap, norm=colors.LogNorm(
-            vmin=1, vmax=np.max(arr_val)))
+            vmin=max(minimum, 1e-6), vmax=maximum))
         plt.colorbar()
         plt.xlim(0, self.out_size)
         plt.ylim(0, self.out_size)
@@ -828,11 +836,11 @@ class OneHotMLP:
         plt.clf()
 
         # Draw again with absolute numbers and weights
-        cmap = matplotlib.cm.RdYlBu
+        cmap = matplotlib.cm.RdYlBu_r
         cmap.set_bad(color='white')
-        
+        minimum, maximum = find_limits(arr_train_w_weights)
         plt.pcolormesh(xn, yn, arr_train_w_weights, cmap=cmap, norm=colors.LogNorm(
-            vmin=1, vmax=np.max(arr_train_w_weights)))
+            vmin=max(minimum, 1e-6), vmax=maximum))
         plt.colorbar()
         plt.xlim(0, self.out_size)
         plt.ylim(0, self.out_size)
@@ -856,10 +864,11 @@ class OneHotMLP:
         plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute_weights.eps'.format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute_weights.png'.format(epoch))
         plt.clf()
-        cmap = matplotlib.cm.RdYlBu
+        cmap = matplotlib.cm.RdYlBu_r
         cmap.set_bad(color='white')
+        minimum, maximum = find_limits(arr_val_w_weights)
         plt.pcolormesh(xn, yn, arr_val_w_weights, cmap=cmap, norm=colors.LogNorm(
-            vmin=1, vmax=np.max(arr_val_w_weights)))
+            vmin=max(minimum, 1e-6), vmax=maximum))
         plt.colorbar()
         plt.xlim(0, self.out_size)
         plt.ylim(0, self.out_size)
@@ -1094,4 +1103,7 @@ class OneHotMLP:
                     values[i]))
 
 
-
+def find_limits(arr):
+    minimum = np.min(arr) / (np.pi**2.0 * np.exp(1.0)**2.0)
+    maximum = np.max(arr) * np.pi**2.0 * np.exp(1.0)**2.0
+    return minimum, maximum
