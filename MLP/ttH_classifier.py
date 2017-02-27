@@ -247,8 +247,9 @@ class OneHotMLP:
             # w_2 = tf.mul(10000.0, (tf.cast(tf.equal(tf.argmax(y_, dimension=1),0),
             #     tf.float32)) * (1.0 - tf.cast(tf.equal(tf.argmax(y,
             #         dimension=1),0), tf.float32))) + 1.0
-            w_2 = 10.0 * tf.add(tf.mul(tf.nn.softmax(y_)[:,0], (tf.sub(1.0,
+            w_2 = 1e-5 * tf.add(tf.mul(tf.nn.softmax(y_)[:,0], (tf.sub(1.0,
                 y[:,0]))), tf.mul(tf.sub(1.0, tf.nn.softmax(y_)[:,0]), y[:,0]))
+            # w_2 = 1e-5 * tf.mul(tf.nn.softmax(y_)[:,0], tf.sub(1.0, y[:,0]))
             # loss = tf.add(tf.reduce_mean(tf.reduce_sum(tf.mul(w, xentropy))), l2_reg, 
             #         name='loss')
             # loss = tf.add(tf.reduce_sum(tf.mul(w_2, tf.mul(w, xentropy))), l2_reg, name='loss')
