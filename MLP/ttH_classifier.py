@@ -244,13 +244,16 @@ class OneHotMLP:
             # Cross entropy
             xentropy = tf.nn.softmax_cross_entropy_with_logits(labels=y,logits=y_)
             l2_reg = beta * self._l2_regularization(weights)
-            w_2 = tf.mul(100.0, (tf.cast(tf.equal(tf.argmax(y_, dimension=1),0),
-                tf.float32)) * (1.0 - tf.cast(tf.equal(tf.argmax(y,
-                    dimension=1),0), tf.float32))) + 1.0
+            # w_2 = tf.mul(10000.0, (tf.cast(tf.equal(tf.argmax(y_, dimension=1),0),
+            #     tf.float32)) * (1.0 - tf.cast(tf.equal(tf.argmax(y,
+            #         dimension=1),0), tf.float32))) + 1.0
+            w_2 = 10.0 * tf.mul(tf.nn.softmax(y_)[:,0], (1.0 - y[:,0])) 
             # loss = tf.add(tf.reduce_mean(tf.reduce_sum(tf.mul(w, xentropy))), l2_reg, 
             #         name='loss')
-            loss = tf.add(tf.reduce_sum(tf.mul(w_2, tf.mul(w, xentropy))), l2_reg, name='loss')
-            
+            # loss = tf.add(tf.reduce_sum(tf.mul(w_2, tf.mul(w, xentropy))), l2_reg, name='loss')
+            # loss = tf.reduce_mean(w_2)
+            loss = tf.add(tf.reduce_sum(tf.add(tf.mul(w, xentropy), w_2)), l2_reg, name='loss')
+
             # optimizer
             optimizer, global_step = self._build_optimizer()
             train_step = optimizer.minimize(loss, global_step=global_step)
