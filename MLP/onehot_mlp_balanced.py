@@ -28,7 +28,7 @@ class OneHotMLP:
 
 
     def __init__(self, n_features, h_layers, out_size, savedir, labels_text,
-            branchlist, sig_weight, bg_weight, act_func='relu'):
+            branchlist, sig_weight, bg_weight, act_func='tanh'):
         """Initializes the Classifier.
 
         Arguments:
@@ -335,7 +335,7 @@ class OneHotMLP:
                     if (val_accuracy[-1] > early_stopping['val_acc']):
                         save_path = saver.save(sess, self.model_loc)
                         early_stopping['val_acc'] = val_accuracy[-1]
-                        early_stopping['epoch'] = epoch + 1
+                        early_stopping['epoch'] = epoch
                     elif ((epoch+1 - early_stopping['epoch']) > self.early_stop):
                         print(125*'-')
                         print('Early stopping invoked. '\
@@ -529,8 +529,8 @@ class OneHotMLP:
 
     def _build_activation_function(self):
         """Returns the activation function."""
-        if (self.act_func == 'tanh'):
-            return tf.tanh
+        if (self.act_func == 'relu'):
+            return tf.nn.relu
         elif (self.act_func == 'elu'):
             return tf.nn.elu
         elif (self.act_func == 'sigmoid'):
@@ -538,7 +538,7 @@ class OneHotMLP:
         elif (self.act_func == 'softplus'):
             return tf.nn.softplus
         else:
-            return tf.nn.relu
+            return tf.tanh
 
 
     # def _onehot(self, arr, length):
@@ -563,6 +563,7 @@ class OneHotMLP:
         with open('{}/info.txt'.format(self.savedir),'w') as f:
             f.write('Date: {}\n'.format(datetime.datetime.now().strftime("%Y_%m_%d")))
             f.write('Time: {}\n'.format(datetime.datetime.now().strftime("%H_%M_%S")))
+            f.write('Hidden layers: {}\n'.format(self.h_layers))
             f.write('Training Epochs: {}\n'.format(epochs))
             f.write('Batch Size: {}\n'.format(batch_size))
             f.write('Dropout: {}\n'.format(keep_prob))
@@ -597,8 +598,8 @@ class OneHotMLP:
         plt.legend(bbox_to_anchor=(1,1))
         plt.grid(True)
         plt.savefig(self.savedir + '/loss.pdf')
-        plt.savefig(self.savedir + '/loss.png')
-        plt.savefig(self.savedir + '/loss.eps')
+        # plt.savefig(self.savedir + '/loss.png')
+        # plt.savefig(self.savedir + '/loss.eps')
         plt.clf()
 
 
@@ -614,8 +615,8 @@ class OneHotMLP:
         plt.grid(True)
         plt_name = self.name + '_accuracy'
         plt.savefig(self.savedir + '/' + plt_name + '.pdf')
-        plt.savefig(self.savedir + '/' + plt_name + '.png')
-        plt.savefig(self.savedir + '/' + plt_name + '.eps')
+        # plt.savefig(self.savedir + '/' + plt_name + '.png')
+        # plt.savefig(self.savedir + '/' + plt_name + '.eps')
         plt.clf()
         
         arr = np.zeros((self.out_size, len(train_cats)))
@@ -631,8 +632,8 @@ class OneHotMLP:
         plt.grid(True)
         plt_name = self.name + '_categories_train'
         plt.savefig(self.savedir + '/' + plt_name + '.pdf')
-        plt.savefig(self.savedir + '/' + plt_name + '.png')
-        plt.savefig(self.savedir + '/' + plt_name + '.eps')
+        # plt.savefig(self.savedir + '/' + plt_name + '.png')
+        # plt.savefig(self.savedir + '/' + plt_name + '.eps')
         plt.clf()
         arr = np.zeros((self.out_size, len(val_cats)))
         for i in range(len(val_cats)):
@@ -647,8 +648,8 @@ class OneHotMLP:
         plt.grid(True)
         plt_name = self.name + '_categories_val'
         plt.savefig(self.savedir + '/' + plt_name + '.pdf')
-        plt.savefig(self.savedir + '/' + plt_name + '.png')
-        plt.savefig(self.savedir + '/' + plt_name + '.eps')
+        # plt.savefig(self.savedir + '/' + plt_name + '.png')
+        # plt.savefig(self.savedir + '/' + plt_name + '.eps')
         plt.clf()
     
 
@@ -700,12 +701,12 @@ class OneHotMLP:
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
         if (early=='yes'):
-            plt.title('Heatmap: Training after early stopping in epoch{}'.format(epoch))
+            plt.title('Heatmap: Training after early stopping in epoch {}'.format(epoch))
         else:
             plt.title("Heatmap: Training after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train.pdf'.format(epoch))
-        plt.savefig(self.cross_savedir + '/{}_train.eps'.format(epoch))
-        plt.savefig(self.cross_savedir + '/{}_train.png'.format(epoch))
+        # plt.savefig(self.cross_savedir + '/{}_train.eps'.format(epoch))
+        # plt.savefig(self.cross_savedir + '/{}_train.png'.format(epoch))
         plt.clf()
         cmap = matplotlib.cm.RdYlBu_r
         plt.pcolormesh(xn, yn, arr_val_float, cmap=cmap, vmin=0.0, vmax=1.0)
@@ -720,12 +721,12 @@ class OneHotMLP:
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
         if (early=='yes'):
-            plt.title('Heatmap: Validation after early stopping in epoch{}'.format(epoch))
+            plt.title('Heatmap: Validation after early stopping in epoch {}'.format(epoch))
         else:
             plt.title("Heatmap: Validation after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation.pdf'.format(epoch))
-        plt.savefig(self.cross_savedir + '/{}_validation.eps'.format(epoch))
-        plt.savefig(self.cross_savedir + '/{}_validation.png'.format(epoch))
+        # plt.savefig(self.cross_savedir + '/{}_validation.eps'.format(epoch))
+        # plt.savefig(self.cross_savedir + '/{}_validation.png'.format(epoch))
         plt.clf()
         
         # Draw again with LogNorm colors
@@ -745,12 +746,12 @@ class OneHotMLP:
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
         if (early=='yes'):
-            plt.title('Heatmap: Training after early stopping in epoch{}'.format(epoch))
+            plt.title('Heatmap: Training after early stopping in epoch {}'.format(epoch))
         else:
             plt.title("Heatmap: Training after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog.pdf'.format(epoch))
-        plt.savefig(self.cross_savedir + '/{}_train_colorlog.eps'.format(epoch))
-        plt.savefig(self.cross_savedir + '/{}_train_colorlog.png'.format(epoch))
+        # plt.savefig(self.cross_savedir + '/{}_train_colorlog.eps'.format(epoch))
+        # plt.savefig(self.cross_savedir + '/{}_train_colorlog.png'.format(epoch))
         plt.clf()
         cmap = matplotlib.cm.RdYlBu_r
         cmap.set_bad(color='white')
@@ -768,12 +769,12 @@ class OneHotMLP:
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
         if (early=='yes'):
-            plt.title('Heatmap: Validation after early stopping in epoch{}'.format(epoch))
+            plt.title('Heatmap: Validation after early stopping in epoch {}'.format(epoch))
         else:
             plt.title("Heatmap: Validation after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation_colorlog.pdf'.format(epoch))
-        plt.savefig(self.cross_savedir + '/{}_validation_colorlog.eps'.format(epoch))
-        plt.savefig(self.cross_savedir + '/{}_validation_colorlog.png'.format(epoch))
+        # plt.savefig(self.cross_savedir + '/{}_validation_colorlog.eps'.format(epoch))
+        # plt.savefig(self.cross_savedir + '/{}_validation_colorlog.png'.format(epoch))
         plt.clf()
 
         # Draw again with absolute numbers
@@ -798,12 +799,12 @@ class OneHotMLP:
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
         if (early=='yes'):
-            plt.title('Heatmap: Training after early stopping in epoch{}'.format(epoch))
+            plt.title('Heatmap: Training after early stopping in epoch {}'.format(epoch))
         else:
             plt.title("Heatmap: Training after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute.pdf'.format(epoch))
-        plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute.eps'.format(epoch))
-        plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute.png'.format(epoch))
+        # plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute.eps'.format(epoch))
+        # plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute.png'.format(epoch))
         plt.clf()
         cmap = matplotlib.cm.RdYlBu_r
         cmap.set_bad(color='white')
@@ -826,12 +827,12 @@ class OneHotMLP:
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
         if (early=='yes'):
-            plt.title('Heatmap: Validation after early stopping in epoch{}'.format(epoch))
+            plt.title('Heatmap: Validation after early stopping in epoch {}'.format(epoch))
         else:
             plt.title("Heatmap: Validation after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute.pdf'.format(epoch))
-        plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute.eps'.format(epoch))
-        plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute.png'.format(epoch))
+        # plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute.eps'.format(epoch))
+        # plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute.png'.format(epoch))
         plt.clf()
 
         # Draw again with absolute numbers and weights
@@ -856,12 +857,12 @@ class OneHotMLP:
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
         if (early=='yes'):
-            plt.title('Heatmap: Training after early stopping in epoch{}'.format(epoch))
+            plt.title('Heatmap: Training after early stopping in epoch {}'.format(epoch))
         else:
             plt.title("Heatmap: Training after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute_weights.pdf'.format(epoch))
-        plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute_weights.eps'.format(epoch))
-        plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute_weights.png'.format(epoch))
+        # plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute_weights.eps'.format(epoch))
+        # plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute_weights.png'.format(epoch))
         plt.clf()
         cmap = matplotlib.cm.RdYlBu_r
         cmap.set_bad(color='white')
@@ -884,12 +885,12 @@ class OneHotMLP:
         ax.set_xticklabels(self.labels_text)
         ax.set_yticklabels(self.labels_text)
         if (early=='yes'):
-            plt.title('Heatmap: Validation after early stopping in epoch{}'.format(epoch))
+            plt.title('Heatmap: Validation after early stopping in epoch {}'.format(epoch))
         else:
             plt.title("Heatmap: Validation after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute_weights.pdf'.format(epoch))
-        plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute_weights.eps'.format(epoch))
-        plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute_weights.png'.format(epoch))
+        # plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute_weights.eps'.format(epoch))
+        # plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute_weights.png'.format(epoch))
         plt.clf()
 
 
@@ -919,17 +920,17 @@ class OneHotMLP:
             if (early=='yes'):
                 plt.savefig(self.weights_savedir + 
                         '/epoch{}_weight{}_early.pdf'.format(epoch+1, i+1))
-                plt.savefig(self.weights_savedir + 
-                        '/epoch{}_weight{}_early.eps'.format(epoch+1, i+1))
-                plt.savefig(self.weights_savedir + 
-                        '/epoch{}_weight{}_early.png'.format(epoch+1, i+1))
+                # plt.savefig(self.weights_savedir + 
+                #         '/epoch{}_weight{}_early.eps'.format(epoch+1, i+1))
+                # plt.savefig(self.weights_savedir + 
+                #         '/epoch{}_weight{}_early.png'.format(epoch+1, i+1))
             else:
                 plt.savefig(self.weights_savedir + 
                         '/epoch{}_weight{}.pdf'.format(epoch+1, i+1))
-                plt.savefig(self.weights_savedir + 
-                        '/epoch{}_weight{}.eps'.format(epoch+1, i+1))
-                plt.savefig(self.weights_savedir + 
-                        '/epoch{}_weight{}.png'.format(epoch+1, i+1))
+                # plt.savefig(self.weights_savedir + 
+                #         '/epoch{}_weight{}.eps'.format(epoch+1, i+1))
+                # plt.savefig(self.weights_savedir + 
+                #         '/epoch{}_weight{}.png'.format(epoch+1, i+1))
             plt.clf()
 
 
@@ -959,14 +960,14 @@ class OneHotMLP:
         for i in range(arr_train.shape[1]):
             n, bins, patches = plt.hist(arr_train[:,i], bins=100, normed=False)
             plt.savefig(self.hists_savedir_train + str(epoch+1) + '_' + str(i+1) + '.pdf')
-            plt.savefig(self.hists_savedir_train + str(epoch+1) + '_' + str(i+1) + '.eps')
-            plt.savefig(self.hists_savedir_train + str(epoch+1) + '_' + str(i+1) + '.png')
+            # plt.savefig(self.hists_savedir_train + str(epoch+1) + '_' + str(i+1) + '.eps')
+            # plt.savefig(self.hists_savedir_train + str(epoch+1) + '_' + str(i+1) + '.png')
             plt.clf()
         for i in range(arr_val.shape[1]):
             n, bins, patches = plt.hist(arr_val[:,i], bins=100, normed=False)
             plt.savefig(self.hists_savedir_val + str(epoch+1) + '_' + str(i+1) + '.pdf')
-            plt.savefig(self.hists_savedir_val + str(epoch+1) + '_' + str(i+1) + '.eps')
-            plt.savefig(self.hists_savedir_val + str(epoch+1) + '_' + str(i+1) + '.png')
+            # plt.savefig(self.hists_savedir_val + str(epoch+1) + '_' + str(i+1) + '.eps')
+            # plt.savefig(self.hists_savedir_val + str(epoch+1) + '_' + str(i+1) + '.png')
             plt.clf()
 
 
@@ -1027,8 +1028,8 @@ class OneHotMLP:
             plt.grid(True)
             plt.legend(loc='best')
             plt.savefig(self.mistag_savedir + 'train_x_{}_as.pdf'.format(i))
-            plt.savefig(self.mistag_savedir + 'train_x_{}_as.png'.format(i))
-            plt.savefig(self.mistag_savedir + 'train_x_{}_as.eps'.format(i))
+            # plt.savefig(self.mistag_savedir + 'train_x_{}_as.png'.format(i))
+            # plt.savefig(self.mistag_savedir + 'train_x_{}_as.eps'.format(i))
             plt.clf()
         for i in range(val_x_classified_as_y.shape[1]):
             for j in range(val_x_classified_as_y.shape[2]):
@@ -1042,8 +1043,8 @@ class OneHotMLP:
             plt.grid(True)
             plt.legend(loc='best')
             plt.savefig(self.mistag_savedir + 'val_x_{}_as.pdf'.format(i))
-            plt.savefig(self.mistag_savedir + 'val_x_{}_as.png'.format(i))
-            plt.savefig(self.mistag_savedir + 'val_x_{}_as.eps'.format(i))
+            # plt.savefig(self.mistag_savedir + 'val_x_{}_as.png'.format(i))
+            # plt.savefig(self.mistag_savedir + 'val_x_{}_as.eps'.format(i))
             plt.clf()
         for i in range(train_y_classified_as_x.shape[2]):
             for j in range(train_y_classified_as_x.shape[1]):
@@ -1057,8 +1058,8 @@ class OneHotMLP:
             plt.grid(True)
             plt.legend(loc='best')
             plt.savefig(self.mistag_savedir + 'train_as_x_{}.pdf'.format(i))
-            plt.savefig(self.mistag_savedir + 'train_as_x_{}.png'.format(i))
-            plt.savefig(self.mistag_savedir + 'train_as_x_{}.eps'.format(i))
+            # plt.savefig(self.mistag_savedir + 'train_as_x_{}.png'.format(i))
+            # plt.savefig(self.mistag_savedir + 'train_as_x_{}.eps'.format(i))
             plt.clf()
         for i in range(val_y_classified_as_x.shape[2]):
             for j in range(val_y_classified_as_x.shape[1]):
@@ -1072,8 +1073,8 @@ class OneHotMLP:
             plt.grid(True)
             plt.legend(loc='best')
             plt.savefig(self.mistag_savedir + 'val_as_x_{}.pdf'.format(i))
-            plt.savefig(self.mistag_savedir + 'val_as_x_{}.png'.format(i))
-            plt.savefig(self.mistag_savedir + 'val_as_x_{}.eps'.format(i))
+            # plt.savefig(self.mistag_savedir + 'val_as_x_{}.png'.format(i))
+            # plt.savefig(self.mistag_savedir + 'val_as_x_{}.eps'.format(i))
             plt.clf()
 
     def _find_most_important_weights(self, w, n=10):
