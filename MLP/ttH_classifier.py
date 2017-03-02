@@ -15,7 +15,7 @@ import datetime
 import sys
 import time
 import pickle
-os.environ['CUDA_VISIBLE_DEVICES'] = "1"
+os.environ['CUDA_VISIBLE_DEVICES'] = "2"
 
 # from sklearn.metrics import roc_auc_score, roc_curve
 
@@ -254,6 +254,8 @@ class OneHotMLP:
                 y[:,0]))), tf.mul(tf.sub(1.0, tf.nn.softmax(y_)[:,0]), y[:,0]))
             # loss = tf.add(tf.reduce_sum(tf.mul(w_2, tf.mul(w, xentropy))), l2_reg, name='loss')
             # loss = tf.reduce_mean(w_2)
+            # loss = tf.add(tf.add(tf.reduce_sum(tf.mul(w, xentropy)), w_2),
+            #         l2_reg, name='loss')
             loss = tf.add(tf.reduce_sum(tf.add(tf.mul(w, xentropy), w_2)), l2_reg, name='loss')
             # loss = tf.reduce_mean(w_2)
             # optimizer
@@ -582,6 +584,7 @@ class OneHotMLP:
             f.write('Dropout: {}\n'.format(keep_prob))
             f.write('L2 Regularization: {}\n'.format(beta))
             f.write('Training Time: {} sec.\n'.format(time))
+            f.write('ttH penalty: {}\n'.format(self.ttH_penalty))
             f.write('Optimizer: {}\n'.format(self.optname))
             f.write('Initial learning rate: {}\n'.format(self.initial_learning_rate))
             f.write('Activation function: {}\n'.format(self.act_func))

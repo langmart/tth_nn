@@ -1,7 +1,7 @@
 # written by Martin Lang.
 import numpy as np
 import datetime
-from MLP.ttH_classifier_testing import OneHotMLP
+from MLP.ttH_classifier import OneHotMLP
 from DataFrame.data_frame import DataFrame
 
 
@@ -37,7 +37,7 @@ decay_learning_rate = 'yes'
 lrate_decay_options = [0.97, 200]
 batch_decay = 'no'
 batch_decay_options = []
-ttH_penalty = 1e-5
+ttH_penalty = 0.0
 enable_early='yes'
 early_stop = 20
 
