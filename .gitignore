@@ -1,9 +1,11 @@
 train_*.py
 training/
+batch_trainer_*
 get_branches/
 get_branches
 __pycache__
-filelist
+filelist*
+started*
 files*
 graph/
 data/
