@@ -27,9 +27,9 @@ optname = 'Adam'
 optimizer_options = []
 beta = 1e-5
 outsize = 6
-N_EPOCHS = 500
+N_EPOCHS = 1000
 learning_rate = 2e-3
-batch_size = 15000 
+batch_size = 15000
 hidden_layers = [200, 200, 200]
 keep_prob = 0.8
 normalization = 'gaussian'
@@ -37,9 +37,9 @@ decay_learning_rate = 'yes'
 lrate_decay_options = [0.97, 200]
 batch_decay = 'no'
 batch_decay_options = []
-ttH_penalty = 0.0
+ttH_penalty = 2.0
 enable_early='yes'
-early_stop = 20
+early_stop = 30
 
 # Be careful when editing the part below.
 train = DataFrame(train, out_size=outsize, normalization=normalization)

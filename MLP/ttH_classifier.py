@@ -250,13 +250,16 @@ class OneHotMLP:
             # w_2 = tf.mul(10000.0, (tf.cast(tf.equal(tf.argmax(y_, dimension=1),0),
             #     tf.float32)) * (1.0 - tf.cast(tf.equal(tf.argmax(y,
             #         dimension=1),0), tf.float32))) + 1.0
-            w_2 = self.ttH_penalty * tf.add(tf.mul(tf.nn.softmax(y_)[:,0], (tf.sub(1.0,
-                y[:,0]))), tf.mul(tf.sub(1.0, tf.nn.softmax(y_)[:,0]), y[:,0]))
+            w_2 = 1.0 / batch_size * (self.ttH_penalty * tf.add(
+                self.bg_weight * tf.mul(tf.nn.softmax(y_)[:,0], 
+                (tf.sub(1.0, y[:,0]))), self.sig_weight * tf.mul(
+                tf.sub(1.0, tf.nn.softmax(y_)[:,0]), y[:,0])))
             # loss = tf.add(tf.reduce_sum(tf.mul(w_2, tf.mul(w, xentropy))), l2_reg, name='loss')
             # loss = tf.reduce_mean(w_2)
             # loss = tf.add(tf.add(tf.reduce_sum(tf.mul(w, xentropy)), w_2),
             #         l2_reg, name='loss')
-            loss = tf.add(tf.reduce_sum(tf.add(tf.mul(w, xentropy), w_2)), l2_reg, name='loss')
+            loss = tf.add(tf.reduce_sum(tf.add(tf.mul(w, xentropy),w_2)), 
+                    l2_reg, name='loss')
             # loss = tf.reduce_mean(w_2)
             # optimizer
             optimizer, global_step = self._build_optimizer()
@@ -275,21 +278,27 @@ class OneHotMLP:
         with tf.Session(config=sess_config, graph=train_graph) as sess:
             self.model_loc = self.savedir + '/{}.ckpt'.format(self.name)
             sess.run(init)
-            train_purity= []
+            train_purity = []
+            train_ttH_list = []
+            train_mis_list = []
+            val_ttH_list = []
+            val_mis_list = []
             val_purity = []
+            val_significance = []
+            val_prod_list = []
             train_losses = []
             train_cats = []
             val_cats = []
             train_data.normalize()
             val_data.normalize()
-            early_stopping = {'val_purity': 0.0, 'epoch': 0}
+            early_stopping = {'val_purity': 0.0, 'val_significance': 0.0, 'epoch': 0}
 
             print(110*'-')
             print('Train model: {}'.format(self.model_loc))
-            print(110*'_')
-            print('{:^25} | {:^25} | {:^25} | {:^25}'.format('Epoch', 'Training Loss', 
-                'Training ttH purity', 'Validation ttH purity'))
-            print(110*'-')
+            print(140*'_')
+            print('{:^25} | {:^25} | {:^25} | {:^25} | {:^25}'.format('Epoch', 'Training Loss', 
+                'Training ttH purity', 'Validation ttH purity', 'Validation ttH significance'))
+            print(140*'-')
 
             cross_train_list = []
             cross_val_list = []
@@ -319,7 +328,9 @@ class OneHotMLP:
                 train_w_misclass = self.bg_weight * train_misclass
                 print('train: ({:.4f}, {:.4f})'.format(train_w_ttH, train_w_misclass))
                 train_purity.append(np.nan_to_num(train_w_ttH /
-                        (train_w_misclass)))
+                        (train_w_ttH + train_w_misclass)))
+                train_ttH_list.append(train_w_ttH)
+                train_mis_list.append(train_w_misclass)
                 
                 val_pre = sess.run(yy_, {x:val_data.x})
                 val_ttH, val_misclass, val_cross, val_cat = self._validate_epoch(val_pre,
@@ -327,11 +338,19 @@ class OneHotMLP:
                 val_w_ttH = self.sig_weight * val_ttH
                 val_w_misclass = self.bg_weight * val_misclass
                 print('validation: ({:.4f}, {:.4f})'.format(val_w_ttH, val_w_misclass))
-                val_purity.append(np.nan_to_num(val_w_ttH / (val_w_misclass)))
+                val_purity.append(np.nan_to_num(val_w_ttH / 
+                    (val_w_ttH + val_w_misclass)))
+                val_significance.append(np.nan_to_num(val_w_ttH / np.sqrt(val_w_ttH +
+                    val_w_misclass)))
+                val_ttH_list.append(val_w_ttH)
+                val_mis_list.append(val_w_misclass)
+                val_prod = val_purity[-1] * val_significance[-1]
+                val_prod_list.append(val_prod)
                 
-                
-                print('{:^25} | {:^25.4f} | {:^25.4f} | {:^25.4f}'.format(epoch + 1, 
-                    train_losses[-1], train_purity[-1], val_purity[-1]))
+                print('{:^25} | {:^25.4f} | {:^25.4f} | {:^25.4f} | {:^25.4f} | \
+                {:^25.4f}'.format(epoch + 1, train_losses[-1], train_purity[-1], 
+                            val_purity[-1], val_significance[-1],
+                            val_prod_list[-1]))
                 saver.save(sess, self.model_loc)
                 cross_train_list.append(train_cross)
                 cross_val_list.append(val_cross)
@@ -340,9 +359,12 @@ class OneHotMLP:
 
                 if (self.enable_early=='yes'):
                     # Check for early stopping.
-                    if (val_purity[-1] > early_stopping['val_purity']):
+                    if ((val_purity[-1] * val_significance[-1]) >
+                            (early_stopping['val_purity'] *
+                            early_stopping['val_significance'])):
                         save_path = saver.save(sess, self.model_loc)
                         early_stopping['val_purity'] = val_purity[-1]
+                        early_stopping['val_significance'] = val_significance[-1]
                         early_stopping['epoch'] = epoch
                     elif ((epoch+1 - early_stopping['epoch']) > self.early_stop):
                         print(125*'-')
@@ -363,13 +385,13 @@ class OneHotMLP:
                     save_path = saver.save(sess, self.model_loc)
 
                 if (epoch % 10 == 0):
-                    self._find_most_important_weights(weights_list[epoch])
+                    # self._find_most_important_weights(weights_list[epoch])
+                    # self._write_list(cross_train_list, 'train_cross')
+                    # self._write_list(cross_val_list, 'val_cross')
+                    # self._write_list(train_losses, 'train_losses')
+                    # self._write_list(train_purity, 'train_purity')
+                    # self._write_list(val_purity, 'val_purity')
                     self._plot_loss(train_losses)
-                    self._write_list(cross_train_list, 'train_cross')
-                    self._write_list(cross_val_list, 'val_cross')
-                    self._write_list(train_losses, 'train_losses')
-                    self._write_list(train_purity, 'train_purity')
-                    self._write_list(val_purity, 'val_purity')
                     self._plot_purity(train_purity, val_purity, train_cats,
                             val_cats, epochs)
                     self._plot_weight_matrices(weights, epoch)
@@ -377,6 +399,12 @@ class OneHotMLP:
                     self._plot_hists(train_pre, val_pre, epoch)
                     self._plot_cross_dev(cross_train_list, cross_val_list,
                             epoch+1)
+                    # self._write_list(val_significance, 'val_significance')
+                    # self._write_list(val_prod_list, 'val_prod')
+                    # self._write_list(train_ttH_list, 'train_ttH')
+                    # self._write_list(train_mis_list, 'train_mis')
+                    # self._write_list(val_ttH_list, 'val_ttH')
+                    # self._write_list(val_mis_list, 'val_mis')
 
             print(110*'-')
             train_end=time.time()
@@ -395,6 +423,12 @@ class OneHotMLP:
             self._write_list(train_losses, 'train_losses')
             self._write_list(train_purity, 'train_purity')
             self._write_list(val_purity, 'val_purity')
+            self._write_list(val_significance, 'val_significance')
+            self._write_list(val_prod_list, 'val_prod')
+            self._write_list(train_ttH_list, 'train_ttH')
+            self._write_list(train_mis_list, 'train_mis')
+            self._write_list(val_ttH_list, 'val_ttH')
+            self._write_list(val_mis_list, 'val_mis')
             if not (self.enable_early == 'yes'):
                 self._find_most_important_weights(weights)
             self.trained = True
@@ -434,15 +468,10 @@ class OneHotMLP:
         index_pred = np.argmax(pred, axis=1)
         for i in range(index_true.shape[0]):
             arr_cross[index_true[i]][index_pred[i]] += 1
-        # equal = (index_true == index_pred)
-        # correct = np.count_nonzero(equal)
-        # mistag = equal.shape[0] - correct
         ttH_events = np.asarray([((index_pred[i] == 0) and (index_true[i]==0)) for i in
                 range(index_true.shape[0])])
         false_positives = np.asarray([((index_pred[i] == 0) and (index_true[i] !=
             0)) for i in range(index_true.shape[0])])
-        # ttH_events = ((index_pred == 0) and (index_true == 0))
-        # false_positives = ((index_pred == 0) and (index_true != 0))
         ttH = np.count_nonzero(ttH_events)
         misclass = np.count_nonzero(false_positives)
         cat_acc = np.zeros((self.out_size), dtype=np.float32)
@@ -579,6 +608,7 @@ class OneHotMLP:
         with open('{}/info.txt'.format(self.savedir),'w') as f:
             f.write('Date: {}\n'.format(datetime.datetime.now().strftime("%Y_%m_%d")))
             f.write('Time: {}\n'.format(datetime.datetime.now().strftime("%H_%M_%S")))
+            f.write('Hidden layers: {}\n'.format(self.h_layers))
             f.write('Training Epochs: {}\n'.format(epochs))
             f.write('Batch Size: {}\n'.format(batch_size))
             f.write('Dropout: {}\n'.format(keep_prob))
@@ -600,9 +630,11 @@ class OneHotMLP:
             if (self.enable_early == 'yes'):
                 f.write('Early stopping interval: {}\n'.format(self.early_stop))
                 f.write('Best validation epoch: {}\n'.format(early_stop['epoch']))
-                f.write('Best validation purity: {}'.format(early_stop['val_purity']))
+                f.write('Best validation purity: {}\n'.format(early_stop['val_purity']))
+                f.write('According validation significance: {} \
+                        '.format(early_stop['val_significance']))
             else:
-                f.write('Last validation purity: {}'.format(val_pur_last))
+                f.write('Last validation purity: {}\n'.format(val_pur_last))
 
     def _plot_loss(self, train_loss):
         """Plot loss of training and validation data.
@@ -643,7 +675,7 @@ class OneHotMLP:
             plt.plot(arr[j], label = self.labels_text[j])
         plt.xlabel('Epoch')
         plt.ylabel('Accuracy')
-        plt.title('Categories: Training accuracy development')
+        plt.title('Categories: Training Accuracy development')
         plt.legend(loc='best')
         plt.grid(True)
         plt_name = self.name + '_categories_train'
@@ -915,8 +947,8 @@ class OneHotMLP:
 
     def _plot_weight_matrices(self, w, epoch, early='no'):
         np_weights = [weight.eval() for weight in w]
-        self._write_list(np_weights[0], 'first_weights')
-        self._write_list(np_weights, 'weights')
+        self._write_list(np_weights[0], 'first_weights_{}'.format(epoch))
+        self._write_list(np_weights, 'weights_{}'.format(epoch))
         for i in range(len(np_weights)):
             np_weight = np_weights[i]
             xr, yr = np_weight.shape

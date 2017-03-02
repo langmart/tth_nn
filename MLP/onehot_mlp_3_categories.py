@@ -300,9 +300,6 @@ class OneHotMLP:
                     _, train_loss, weights_for_plot, yps = sess.run([train_step,
                         loss, weights, y_], {x:train_x, y:train_y, w:train_w})
                     epoch_loss += train_loss
-                    # print(yps)
-                    # print(yps.shape)
-                    # print(loss.get_shape())
                 weights_list.append(weights)
                 train_losses.append(np.mean(epoch_loss))
                 train_data.shuffle()
@@ -354,13 +351,13 @@ class OneHotMLP:
                     save_path = saver.save(sess, self.model_loc)
 
                 if (epoch % 10 == 0):
-                    self._find_most_important_weights(weights_list[epoch])
+                    # self._find_most_important_weights(weights_list[epoch])
+                    # self._write_list(cross_train_list, 'train_cross')
+                    # self._write_list(cross_val_list, 'val_cross')
+                    # self._write_list(train_losses, 'train_losses')
+                    # self._write_list(train_accuracy, 'train_accuracy')
+                    # self._write_list(val_accuracy, 'val_accuracy')
                     self._plot_loss(train_losses)
-                    self._write_list(cross_train_list, 'train_cross')
-                    self._write_list(cross_val_list, 'val_cross')
-                    self._write_list(train_losses, 'train_losses')
-                    self._write_list(train_accuracy, 'train_accuracy')
-                    self._write_list(val_accuracy, 'val_accuracy')
                     self._plot_accuracy(train_accuracy, val_accuracy, train_cats,
                             val_cats, epochs)
                     self._plot_weight_matrices(weights, epoch)
@@ -681,6 +678,8 @@ class OneHotMLP:
                     arr_val_w_weights[i][j] = 1.0 * arr_val[i][j] * self.sig_weight
                 else:
                     arr_val_w_weights[i][j] = 1.0 * arr_val[i][j] * self.bg_weight
+        if (early == 'yes'):
+            epoch += 1
         print(arr_train)
         print('-----------------')
         print(arr_val)
@@ -896,8 +895,8 @@ class OneHotMLP:
 
     def _plot_weight_matrices(self, w, epoch, early='no'):
         np_weights = [weight.eval() for weight in w]
-        self._write_list(np_weights[0], 'first_weights')
-        self._write_list(np_weights, 'weights')
+        self._write_list(np_weights[0], 'first_weights_{}'.format(epoch))
+        self._write_list(np_weights, 'weights_{}'.format(epoch))
         for i in range(len(np_weights)):
             np_weight = np_weights[i]
             xr, yr = np_weight.shape
