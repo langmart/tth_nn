@@ -21,10 +21,6 @@ BDT_common5_input_pt_all_jets_over_E_all_jets
 BDT_common5_input_second_highest_btag
 BDT_common5_input_sphericity
 BDT_common5_input_third_highest_btag
-BDT_common5_output
-Evt_CSV_Average
-Evt_CSV_Average_Tagged
-Evt_CSV_Dev_Tagged
 Evt_CSV_Min_Tagged
 Evt_Deta_2TaggedJetsAverage
 Evt_Deta_6JetsAverage
@@ -34,17 +30,11 @@ Evt_Dr_6JetsAverage
 Evt_Dr_JetsAverage
 Evt_Dr_MinDeltaRJets
 Evt_Dr_MinDeltaRLeptonJet
-Evt_Dr_MinDeltaRLeptonTaggedJet
 Evt_Dr_MinDeltaRTaggedJets
 Evt_Eta_UntaggedJetsAverage
-Evt_H0
-Evt_HT
-Evt_HT_Jets
-Evt_JetPtOverJetE
 Evt_Jet_Detamax_Jet1
 Evt_Jet_Detamax_Lepton
 Evt_Jet_MaxDeta_Jets
-Evt_blr_ETH
 Evt_blr_ETH_transformed
 N_BTagsL
 N_BTagsM
@@ -60,4 +50,3 @@ Jet_Deta_Jet1
 Jet_Deta_Jet2
 Jet_Deta_Jet3
 Jet_Deta_Jet4
-Jet_Flav
