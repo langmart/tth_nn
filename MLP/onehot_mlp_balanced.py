@@ -326,10 +326,18 @@ class OneHotMLP:
                 train_cats.append(train_cat)
                 val_cats.append(val_cat)
 
+                if (epoch == 0):
+                    self._plot_hists(train_pre, val_pre, train_data.y,
+                            val_data.y, 1)
+
                 if (self.enable_early=='yes'):
                     # Check for early stopping.
                     if (val_accuracy[-1] > early_stopping['val_acc']):
                         save_path = saver.save(sess, self.model_loc)
+                        best_train_pred = train_pre
+                        best_train_true = train_data.y
+                        best_val_pred = val_pre
+                        best_val_true = val_data.y
                         early_stopping['val_acc'] = val_accuracy[-1]
                         early_stopping['epoch'] = epoch
                     elif ((epoch+1 - early_stopping['epoch']) > self.early_stop):
@@ -345,25 +353,21 @@ class OneHotMLP:
                         self._plot_cross(cross_train_list[best_epoch],
                                 cross_val_list[best_epoch], best_epoch,
                                 early='yes')
+                        self._plot_hists(best_train_pred, best_val_pred,
+                                best_train_true, best_val_true, best_epoch+1)
                         self._find_most_important_weights(weights_list[best_epoch])
                         break
                 else:
                     save_path = saver.save(sess, self.model_loc)
 
                 if (epoch % 10 == 0):
-                    # self._find_most_important_weights(weights_list[epoch])
-                    # self._write_list(cross_train_list, 'train_cross')
-                    # self._write_list(cross_val_list, 'val_cross')
-                    # self._write_list(train_losses, 'train_losses')
-                    # self._write_list(train_accuracy, 'train_accuracy')
-                    # self._write_list(val_accuracy, 'val_accuracy')
                     self._plot_loss(train_losses)
                     self._plot_accuracy(train_accuracy, val_accuracy, train_cats,
                             val_cats, epochs)
                     self._plot_weight_matrices(weights, epoch)
                     self._plot_cross(train_cross, val_cross, epoch + 1)
-                    self._plot_hists(train_pre, val_pre, train_data.y,
-                            val_data.y, epoch+1)
+                    # self._plot_hists(train_pre, val_pre, train_data.y,
+                    #         val_data.y, epoch+1)
                     self._plot_cross_dev(cross_train_list, cross_val_list,
                             epoch+1)
 
@@ -377,8 +381,8 @@ class OneHotMLP:
                     (train_end - train_start), early_stopping, val_accuracy[-1])
             self._plot_weight_matrices(weights, epoch)
             self._plot_cross(train_cross, val_cross, epoch + 1)
-            self._plot_hists(train_pre, val_pre, train_data.y, val_data.y,
-                    epoch+1)
+            # self._plot_hists(train_pre, val_pre, train_data.y, val_data.y,
+            #         epoch+1)
             self._plot_cross_dev(cross_train_list, cross_val_list, epoch+1)
             self._write_list(cross_train_list, 'train_cross')
             self._write_list(cross_val_list, 'val_cross')
@@ -1001,13 +1005,13 @@ class OneHotMLP:
                             (np.argmax(train_pred[k]) == i)):
                         histo_list.append(train_pred[k,i])
                 plt.hist(histo_list, bins, alpha=0.5, normed=True,
-                histtype='stepfilled', label=self.labels_text[j])
+                histtype='step', label=self.labels_text[j])
             plt.xlabel('{} node output'.format(self.labels_text[i]))
             plt.ylabel('Arbitrary units.')
-            plt.title('node output on the training set for predicted {}'.format(self.labels_text[i]))
+            plt.title('output for predicted {} on the training set'.format(self.labels_text[i]))
             plt.legend(loc='upper center')
             plt.savefig(self.hists_savedir_train + str(epoch) + '_' +
-                    str(i+1)+'.pdf')
+                    str(i+1)+'_predicted.pdf')
             plt.clf()
         for i in range(val_pred.shape[1]):
             for j in range(val_pred.shape[1]):
@@ -1016,18 +1020,14 @@ class OneHotMLP:
                             (np.argmax(val_pred[k]) == i)):
                         histo_list.append(val_pred[k,i])
                 plt.hist(histo_list, bins, alpha=0.5, normed=True,
-                histtype='stepfilled', label=self.labels_text[j])
+                histtype='step', label=self.labels_text[j])
             plt.xlabel('{} node output'.format(self.labels_text[i]))
             plt.ylabel('Arbitrary units.')
-            plt.title('node output on the validation set for predicted {}'.format(self.labels_text[i]))
+            plt.title('output for predicted {} on the validation set'.format(self.labels_text[i]))
             plt.legend(loc='upper center')
             plt.savefig(self.hists_savedir_val + str(epoch) + '_' +
-                    str(i+1)+'.pdf')
+                    str(i+1)+'_predicted.pdf')
             plt.clf()
-
-
-
-                
         print('Done')
 
 
