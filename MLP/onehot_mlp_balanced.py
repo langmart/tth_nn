@@ -1028,10 +1028,6 @@ class OneHotMLP:
             plt.savefig(self.hists_savedir_val + str(epoch) + '_' +
                     str(i+1)+'_predicted.pdf')
             plt.clf()
-
-
-
-                
         print('Done')
 
 
