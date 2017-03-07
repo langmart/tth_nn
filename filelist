@@ -1,4 +1,5 @@
-training/train_strong_decay.py
-training/train_strong.py
-training/train_weak_decay.py
-training/train_weak.py
+training/train_adadelta.py
+training/train_adagrad.py
+training/train_adam.py
+training/train_graddescent.py
+training/train_momentum.py
