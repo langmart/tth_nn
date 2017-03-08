@@ -41,7 +41,7 @@ class DataFrame:
             print('Normalizing using Min-Max normalization.')
             x_max = np.amax(self.x, axis=0).astype(np.float32)
             x_min = np.amin(self.x, axis=0).astype(np.float32)
-            self.x = np.nan_to_num((self.x - x_min) / (x_max - x_min))
+            self.x = 2.0*np.nan_to_num((self.x - x_min) / (x_max - x_min))-1.0
 
 
         elif (self.normalization == 'gaussian'):
@@ -53,7 +53,6 @@ class DataFrame:
         else:
             sys.exit('Only minmax and gaussian normalization are available.')
 
-            
 
     
     def shuffle(self):
