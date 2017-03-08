@@ -163,7 +163,7 @@ class OneHotMLP:
         return out
 
     def train(self, train_data, val_data, optimizer='Adam', epochs = 10, batch_size = 100,
-            learning_rate = 1e-3, keep_prob = 0.9, beta = 0.0, out_size=3,
+            learning_rate = 1e-3, keep_prob = 0.9, beta = 0.0, out_size=3, 
             optimizer_options=[], enable_early='no', early_stop=10, 
             decay_learning_rate='no', dlrate_options=[], batch_decay='no', 
             batch_decay_options=[]):
@@ -363,12 +363,12 @@ class OneHotMLP:
                     self._plot_loss(train_losses)
                     self._plot_accuracy(train_accuracy, val_accuracy, train_cats,
                             val_cats, epochs)
-                    self._plot_weight_matrices(weights, epoch)
+                    # self._plot_weight_matrices(weights, epoch)
                     self._plot_cross(train_cross, val_cross, epoch + 1)
                     # self._plot_hists(train_pre, val_pre, train_data.y,
                     #         val_data.y, epoch+1)
-                    self._plot_cross_dev(cross_train_list, cross_val_list,
-                            epoch+1)
+                    # self._plot_cross_dev(cross_train_list, cross_val_list,
+                    #         epoch+1)
 
             print(110*'-')
             train_end=time.time()
@@ -964,7 +964,8 @@ class OneHotMLP:
             Array of shape (n_events_val, out_size) containing the true
             validation labels.
         """
-
+        hist_colors = ['navy', 'firebrick', 'darkgreen', 'purple', 'darkorange',
+                'lightseagreen']
         print('Now drawing histograms') 
         bins = np.linspace(0,1,101)
         for i in range(train_pred.shape[1]):
@@ -975,8 +976,8 @@ class OneHotMLP:
                 for k in range(train_pred.shape[0]):
                     if (np.argmax(train_true[k]) == j):
                         histo_list.append(train_pred[k,i])
-                plt.hist(histo_list, bins, alpha=1.0, normed=True,
-                histtype='step',label=self.labels_text[j])
+                plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
+                        normed=True, histtype='step',label=self.labels_text[j])
             plt.xlabel('{} node output'.format(self.labels_text[i]))
             plt.ylabel('Arbitrary units.')
             plt.title('{} node output on training set'.format(self.labels_text[i]))
@@ -989,8 +990,8 @@ class OneHotMLP:
                 for k in range(val_pred.shape[0]):
                     if (np.argmax(val_true[k]) == j):
                         histo_list.append(val_pred[k,i])
-                plt.hist(histo_list, bins, alpha=1.0, normed=True,
-                    histtype='step', label=self.labels_text[j])
+                plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
+                        normed=True, histtype='step',label=self.labels_text[j])
             plt.xlabel('{} node output'.format(self.labels_text[i]))
             plt.ylabel('Arbitrary units.')
             plt.title('{} node output on validation set'.format(self.labels_text[i]))
@@ -1003,12 +1004,12 @@ class OneHotMLP:
                     if ((np.argmax(train_true[k]) == j) and
                             (np.argmax(train_pred[k]) == i)):
                         histo_list.append(train_pred[k,i])
-                plt.hist(histo_list, bins, alpha=1.0, normed=True,
-                histtype='step', label=self.labels_text[j])
+                plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
+                        normed=True, histtype='step',label=self.labels_text[j])
             plt.xlabel('{} node output'.format(self.labels_text[i]))
             plt.ylabel('Arbitrary units.')
             plt.title('output for predicted {} on the training set'.format(self.labels_text[i]))
-            plt.legend(loc='upper right')
+            plt.legend(loc='upper left')
             plt.savefig(self.hists_savedir_train + str(epoch) + '_' +
                     str(i+1)+'_predicted.pdf')
             plt.clf()
@@ -1018,12 +1019,12 @@ class OneHotMLP:
                     if ((np.argmax(val_true[k]) == j) and
                             (np.argmax(val_pred[k]) == i)):
                         histo_list.append(val_pred[k,i])
-                plt.hist(histo_list, bins, alpha=1.0, normed=True,
-                histtype='step', label=self.labels_text[j])
+                plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
+                        normed=True, histtype='step',label=self.labels_text[j])
             plt.xlabel('{} node output'.format(self.labels_text[i]))
             plt.ylabel('Arbitrary units.')
             plt.title('output for predicted {} on the validation set'.format(self.labels_text[i]))
-            plt.legend(loc='upper right')
+            plt.legend(loc='upper left')
             plt.savefig(self.hists_savedir_val + str(epoch) + '_' +
                     str(i+1)+'_predicted.pdf')
             plt.clf()
