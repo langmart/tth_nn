@@ -60,9 +60,11 @@ class ComparePlotter:
             os.makedirs(self.out_path)
 
         data = self._get_arrays()
+        colormap = plt.cm.jet
+        plot_colors = [colormap(i) for i in np.linspace(0, 0.9, len(self.paths))]
         for i in range(len(data)):
             path = self.produce_paths[i]
-            plt.plot(data[path], label=labels[i])
+            plt.plot(data[path], label=labels[i], color=plot_colors[i])
         plt.xlabel('Epoch')
         plt.ylabel(self.ylabel)
         plt.title(self.title)
