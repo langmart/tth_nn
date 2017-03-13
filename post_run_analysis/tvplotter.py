@@ -13,8 +13,8 @@ import os
 import time
 import pickle
 
-class ComparePlotter:
-    """Plotter for multiple plots in one Canvas."""
+class TVPlotter:
+    """Plotter training and validation accuracy in one canvas."""
     
     def __init__(self):
         """Initializes the Plotter.
@@ -24,8 +24,8 @@ class ComparePlotter:
         
         data_dict = dict()
         self.produce_paths = []
-        for path in self.paths:
-            produce_path = path + '/' + self.subpath
+        for subpath in self.subpaths:
+            produce_path = self.path + '/' + subpath
             try:
                 with open(produce_path, 'rb') as f:
                     data_dict[produce_path] = pickle.load(f)
@@ -34,23 +34,23 @@ class ComparePlotter:
             self.produce_paths.append(produce_path)
         return data_dict
 
-    def plot(self, paths, subpath, title, labels, epoch_range, out_path,
+    def plot(self, path, subpaths, title, labels, epoch_range, out_path,
             ylabel='Validation accuracy'):
         """Plots the data in the range determined by epoch_range.
 
         Arguments:
         ----------------
         paths (list of str):
-            List containing the paths to all features to be included.
-        subpath (str):
-            Contains the subdirectory from where to fetch the features. 
+            String containing the path to all features to be included.
+        subpaths (str):
+            List containing the subpaths.
         title (str):
             Contains the plot title.
         labels (list of str):
             Contains the plot label strings.
         """
-        self.paths = paths
-        self.subpath = subpath
+        self.path = path
+        self.subpaths = subpaths
         self.title = r'{}'.format(title)
         self.labels = labels
         self.out_path = out_path
@@ -61,7 +61,7 @@ class ComparePlotter:
 
         data = self._get_arrays()
         colormap = plt.cm.jet
-        plot_colors = [colormap(i) for i in np.linspace(0, 0.9, len(self.paths))]
+        plot_colors = [colormap(i) for i in np.linspace(0, 0.9, len(self.subpaths))]
         for i in range(len(data)):
             path = self.produce_paths[i]
             plt.plot(data[path], label=r'{}'.format(labels[i]), 
@@ -78,7 +78,7 @@ class ComparePlotter:
     def _write_out(self):
         with open(self.out_path + '/info.txt', 'w') as f:
             f.write('paths: \n')
-            for path in self.paths:
-                f.write(path + '\n')
-            f.write('subpath: {}\n'.format(self.subpath))
+            f.write('path: {}\n'.format(self.path))
+            for subpath in self.subpaths:
+                f.write(subpath + '\n')
             f.write('title: {}\n'.format(self.title))

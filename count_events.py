@@ -48,12 +48,29 @@ num_train_weak.append(np.sum(num_train_weak) - num_train_weak[6])
 num_val_weak.append(np.sum(num_val_weak) - num_val_weak[6])
 num_train_strong.append(np.sum(num_train_strong) - num_train_strong[6])
 num_val_strong.append(np.sum(num_val_strong) - num_val_strong[6])
+train_per = [num_train[i] / num_train[len(num_train)-1] for i in
+        range(len(num_train))]
+val_per = [num_val[i] / num_val[len(num_val)-1] for i in
+        range(len(num_val))]
+train_per_weak = [num_train_weak[i] / num_train_weak[len(num_train_weak)-1] for i in
+        range(len(num_train_weak))]
+val_per_weak = [num_val_weak[i] / num_val_weak[len(num_val_weak)-1] for i in
+        range(len(num_val_weak))]
+train_per_strong = [num_train_strong[i] /
+        num_train_strong[len(num_train_strong)-1] for i in
+        range(len(num_train_strong))]
+val_per_strong = [num_val_strong[i] / num_val_strong[len(num_val_strong)-1] for i in
+        range(len(num_val_strong))]
 with open('numbers.txt', 'w') as f:
     f.write('category & training & validation & training & validation & training & validation\\\\ \n')
-    for i in range(8): 
+    for i in range(len(num_train)): 
         f.write('{} & {} & {} & {} & {} & {} & {} \\\\ \n'.format(labels[i], 
             num_train[i], num_val[i], num_train_weak[i], num_val_weak[i], 
             num_train_strong[i], num_val_strong[i]))
+    for i in range(len(num_train)-1): 
+        f.write('{} & {:.2f} & {:.2f} & {:.2f} & {:.2f} & {:.2f} & {:.2f} \\\\ \n'.format(labels[i],
+            train_per[i]*100, val_per[i]*100, train_per_weak[i]*100,
+            val_per_weak[i]*100, train_per_strong[i]*100, val_per_strong[i]*100))
 # print(num_train)
 # print(num_val)
 # print(num_train_weak)
