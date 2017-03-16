@@ -292,12 +292,13 @@ class OneHotMLP:
             val_data.normalize()
             early_stopping = {'val_purity': 0.0, 'val_significance': 0.0, 'epoch': 0}
 
-            print(110*'-')
+            print(130*'-')
             print('Train model: {}'.format(self.model_loc))
-            print(140*'_')
-            print('{:^25} | {:^25} | {:^25} | {:^25} | {:^25}'.format('Epoch', 'Training Loss', 
-                'Training ttH purity', 'Validation ttH purity', 'Validation ttH significance'))
-            print(140*'-')
+            print(130*'_')
+            print('{:^10} | {:^14} | {:^23} | {:^23} | {:^30} | {:^12}'.format('Epoch', 'Loss', 
+                'Training ttH purity', 'Validation ttH purity', 'Validation ttH significance', 
+                'product'))
+            print(130*'-')
 
             cross_train_list = []
             cross_val_list = []
@@ -346,10 +347,9 @@ class OneHotMLP:
                 val_prod = val_purity[-1] * val_significance[-1]
                 val_prod_list.append(val_prod)
                 
-                print('{:^25} | {:^25.4f} | {:^25.4f} | {:^25.4f} | {:^25.4f} | \
-                {:^25.4f}'.format(epoch + 1, train_losses[-1], train_purity[-1], 
-                            val_purity[-1], val_significance[-1],
-                            val_prod_list[-1]))
+                print('{:^10} | {:^14.4f} | {:^23.4f} | {:^23.4f} | {:^30.4f} | {:^12.4f}'.format(
+                    epoch + 1, train_losses[-1], train_purity[-1], val_purity[-1], 
+                    val_significance[-1], val_prod_list[-1]))
                 saver.save(sess, self.model_loc)
                 cross_train_list.append(train_cross)
                 cross_val_list.append(val_cross)
@@ -368,9 +368,11 @@ class OneHotMLP:
                         save_path = saver.save(sess, self.model_loc)
                         early_stopping['val_purity'] = val_purity[-1]
                         early_stopping['val_significance'] = val_significance[-1]
+                        best_train_pred = train_pre
+                        best_train_true = train_data.y
                         best_val_pred = val_pre
                         best_val_true = val_data.y
-                        early_stopping['val_acc'] = val_accuracy[-1]
+                        early_stopping['val_purity'] = val_purity[-1]
                         early_stopping['epoch'] = epoch
                     elif ((epoch+1 - early_stopping['epoch']) > self.early_stop):
                         print(125*'-')

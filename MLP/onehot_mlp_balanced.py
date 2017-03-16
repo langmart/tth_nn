@@ -259,7 +259,7 @@ class OneHotMLP:
         
         # Non-static memory management; memory can be allocated on the fly.
         sess_config = tf.ConfigProto()
-        sess_config.gpu_options.per_process_gpu_memory_fraction = 0.28
+        sess_config.gpu_options.per_process_gpu_memory_fraction = 0.3
         # sess_config.gpu_options.allow_growth = True
         
         with tf.Session(config=sess_config, graph=train_graph) as sess:
