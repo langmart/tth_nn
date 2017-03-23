@@ -35,7 +35,7 @@ class ComparePlotter:
         return data_dict
 
     def plot(self, paths, subpath, title, labels, epoch_range, out_path,
-            ylabel='Validation accuracy'):
+            ylabel='Validation accuracy', legend_title='None'):
         """Plots the data in the range determined by epoch_range.
 
         Arguments:
@@ -69,7 +69,10 @@ class ComparePlotter:
         plt.xlabel(r'Epoch')
         plt.ylabel(self.ylabel)
         plt.title(self.title)
-        plt.legend(loc='best')
+        if (legend_title == 'None'):
+            plt.legend(loc='best')
+        else:
+            plt.legend(loc='best', title=legend_title)
         plt.savefig(self.out_path + '/out.pdf')
         plt.clf()
         self._write_out()
