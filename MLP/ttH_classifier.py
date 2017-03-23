@@ -267,7 +267,6 @@ class OneHotMLP:
             # initialize all variables
             init = tf.initialize_all_variables()
             saver = tf.train.Saver(weights + biases)
-        train_start = time.time()
         
         # Non-static memory management; memory can be allocated on the fly.
         sess_config = tf.ConfigProto()
@@ -303,6 +302,9 @@ class OneHotMLP:
             cross_train_list = []
             cross_val_list = []
             weights_list = []
+            times_list = []
+            
+            train_start = time.time()
             for epoch in range(epochs):
                 if (self.batch_decay == 'yes'):
                     batch_size = int(batch_size * (self.batch_decay_rate ** (1.0 /
@@ -357,8 +359,11 @@ class OneHotMLP:
                 val_cats.append(val_cat)
 
                 if (epoch == 0):
+                    t0 = time.time()
                     self._plot_hists(train_pre, val_pre, train_data.y,
                             val_data.y, 1)
+                    t1 = time.time()
+                    times_list.append(t1 - t0)
 
                 if (self.enable_early=='yes'):
                     # Check for early stopping.
@@ -375,6 +380,7 @@ class OneHotMLP:
                         early_stopping['val_purity'] = val_purity[-1]
                         early_stopping['epoch'] = epoch
                     elif ((epoch+1 - early_stopping['epoch']) > self.early_stop):
+                        t0 = time.time()
                         print(125*'-')
                         print('Early stopping invoked. '\
                                 'Achieved best validation ttH purity score of '\
@@ -390,11 +396,14 @@ class OneHotMLP:
                         self._plot_hists(best_train_pred, best_val_pred,
                                 best_train_true, best_val_true, best_epoch+1)
                         self._find_most_important_weights(weights_list[best_epoch])
+                        t1 = time.time()
+                        times_list.append(t1 - t0)
                         break
                 else:
                     save_path = saver.save(sess, self.model_loc)
 
                 if (epoch % 10 == 0):
+                    t0 = time.time()
                     self._plot_loss(train_losses)
                     self._plot_purity(train_purity, val_purity, train_cats,
                             val_cats, epochs)
@@ -404,19 +413,23 @@ class OneHotMLP:
                     #         val_data.y, epoch+1)
                     # self._plot_cross_dev(cross_train_list, cross_val_list,
                     #         epoch+1)
+                    t1 = time.time()
+                    times_list.append(t1 - t0)
 
             print(110*'-')
             train_end=time.time()
+            dtime = train_end - train_start - sum(times_list)
 
             self._plot_purity(train_purity, val_purity, train_cats,
                     val_cats, epochs)
             self._plot_loss(train_losses)
             self._write_parameters(epochs, batch_size, keep_prob, beta,
-                    (train_end - train_start), early_stopping, val_purity[-1])
+                    dtime, early_stopping, val_purity[-1])
             self._plot_weight_matrices(weights, epoch)
             self._plot_cross(train_cross, val_cross, epoch + 1)
             self._plot_hists(train_pre, val_pre, train_data.y, val_data.y,
                     epoch+1)
+            self._plot_prod(val_purity, val_significance, val_prod_list, epochs)
             self._plot_cross_dev(cross_train_list, cross_val_list, epoch+1)
             self._write_list(cross_train_list, 'train_cross')
             self._write_list(cross_val_list, 'val_cross')
@@ -650,6 +663,31 @@ class OneHotMLP:
         # plt.savefig(self.savedir + '/loss.eps')
         plt.clf()
 
+    def _plot_prod(self, val_pur, val_sig, val_prod_list, epochs):
+        plt.plot(val_prod_list)
+        plt.xlabel(r'Epoch')
+        plt.ylabel(r'Validation purity $\cdot$ significance')
+        plt.title(r'Validation purity $\cdot$ significance')
+        plt.grid(True)
+        plt_name = self.name + '_product'
+        plt.savefig(self.savedir + '/' + plt_name+ '.pdf')
+        plt.clf()
+        plt.plot(val_pur)
+        plt.xlabel(r'Epoch')
+        plt.ylabel(r'Validation purity')
+        plt.title(r'Validation purity')
+        plt.grid(True)
+        plt_name = self.name + '_purity'
+        plt.savefig(self.savedir + '/' + plt_name + '.pdf')
+        plt.clf()
+        plt.plot(val_sig)
+        plt.xlabel(r'Epoch')
+        plt.ylabel(r'Validation significance')
+        plt.title(r'Validation significance')
+        plt.grid(True)
+        plt_name = self.name + '_significance'
+        plt.savefig(self.savedir + '/' + plt_name + '.pdf')
+        plt.clf()
 
     def _plot_purity(self, train_purity, val_purity, train_cats, val_cats, epochs):
         """Plot the training and validation accuracies.
@@ -699,6 +737,8 @@ class OneHotMLP:
         # plt.savefig(self.savedir + '/' + plt_name + '.png')
         # plt.savefig(self.savedir + '/' + plt_name + '.eps')
         plt.clf()
+
+
     
 
     def _plot_cross(self, arr_train, arr_val, epoch, early='no'):

@@ -255,7 +255,6 @@ class OneHotMLP:
             # initialize all variables
             init = tf.initialize_all_variables()
             saver = tf.train.Saver(weights + biases)
-        train_start = time.time()
         
         # Non-static memory management; memory can be allocated on the fly.
         sess_config = tf.ConfigProto()
@@ -286,6 +285,9 @@ class OneHotMLP:
             cross_train_list = []
             cross_val_list = []
             weights_list = []
+            times_list = []
+            
+            train_start = time.time()
             for epoch in range(epochs):
                 if (self.batch_decay == 'yes'):
                     batch_size = int(batch_size * (self.batch_decay_rate ** (1.0 /
@@ -326,8 +328,11 @@ class OneHotMLP:
                 val_cats.append(val_cat)
 
                 if (epoch == 0):
+                    t0 = time.time()
                     self._plot_hists(train_pre, val_pre, train_data.y,
                             val_data.y, 1)
+                    t1 = time.time()
+                    times_list.append(t1 - t0)
 
                 if (self.enable_early=='yes'):
                     # Check for early stopping.
@@ -340,6 +345,7 @@ class OneHotMLP:
                         early_stopping['val_acc'] = val_accuracy[-1]
                         early_stopping['epoch'] = epoch
                     elif ((epoch+1 - early_stopping['epoch']) > self.early_stop):
+                        t0 = time.time()
                         print(125*'-')
                         print('Early stopping invoked. '\
                                 'Achieved best validation score of '\
@@ -355,11 +361,14 @@ class OneHotMLP:
                         self._plot_hists(best_train_pred, best_val_pred,
                                 best_train_true, best_val_true, best_epoch+1)
                         self._find_most_important_weights(weights_list[best_epoch])
+                        t1 = time.time()
+                        times_list.append(t1 - t0)
                         break
                 else:
                     save_path = saver.save(sess, self.model_loc)
 
                 if (epoch % 10 == 0):
+                    t0 = time.time()
                     self._plot_loss(train_losses)
                     self._plot_accuracy(train_accuracy, val_accuracy, train_cats,
                             val_cats, epochs)
@@ -369,15 +378,18 @@ class OneHotMLP:
                     #         val_data.y, epoch+1)
                     # self._plot_cross_dev(cross_train_list, cross_val_list,
                     #         epoch+1)
+                    t1 = time.time()
+                    times_list.append(t1 - t0)
 
             print(110*'-')
             train_end=time.time()
+            dtime = train_end - train_start - sum(times_list)
 
             self._plot_accuracy(train_accuracy, val_accuracy, train_cats,
                     val_cats, epochs)
             self._plot_loss(train_losses)
             self._write_parameters(epochs, batch_size, keep_prob, beta,
-                    (train_end - train_start), early_stopping, val_accuracy[-1])
+                    dtime, early_stopping, val_accuracy[-1])
             self._plot_weight_matrices(weights, epoch)
             self._plot_cross(train_cross, val_cross, epoch + 1)
             self._plot_hists(train_pre, val_pre, train_data.y, val_data.y,

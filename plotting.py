@@ -222,6 +222,50 @@ ylabel = 'Validation accuracy'
 # out_path = 'data/studies/architecture/inhomogeneous/'
 # plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
 
+a_path = 'data/executed/training/architecture/'
+paths_1 = ['1x200', '2x200', '3x200', '4x200', '5x200', '6x200']
+labels = paths_1
+title = 'Validation accuracy'
+paths = [a_path + 'train_' + i for i in paths_1]
+out_path = 'data/studies/architecture/x200/'
+plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
+
+a_path = 'data/executed/analyses/batch_size/'
+paths_1 = ['bs_1', 'bs_2', 'bs_3', 'bs_4', 'bs_5', 'bs_6', 'bs_7', 'bs_8']
+labels = ['100', '150', '200', '250', '300', '400', '500', '600']
+title = 'Validation accuracy'
+legend_title = 'Batch size'
+paths = [a_path + i for i in paths_1]
+out_path = 'data/studies/batch_size/1to8/'
+plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel,
+        legend_title)
+paths_1 = ['bs_9', 'bs_10', 'bs_11', 'bs_12', 'bs_13', 'bs_14']
+labels = ['800', '1000', '1200', '1500', '2000', '2500']
+title = 'Validation accuracy'
+legend_title = 'Batch size'
+paths = [a_path + i for i in paths_1]
+out_path = 'data/studies/batch_size/9to14/'
+plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel,
+        legend_title)
+# paths_1 = ['bs_9', 'bs_10', 'bs_11', 'bs_12', 'bs_13', 'bs_14', 'bs_15', 'bs_16']
+# labels = ['800', '1000', '1200', '1500', '2000', '2500', '3000', '4000']
+# title = 'Validation accuracy'
+# legend_title = 'Batch size'
+# paths = [a_path + i for i in paths_1]
+# out_path = 'data/studies/batch_size/9to16/'
+# plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel,
+#         legend_title)
+# paths_1 = ['bs_17', 'bs_18', 'bs_19', 'bs_20', 'bs_21', 'bs_22', 'bs_23']
+# labels = ['5000', '7000', '10000', '15000', '20000', '25000', '30000']
+# title = 'Validation accuracy'
+# legend_title = 'Batch size'
+# paths = [a_path + i for i in paths_1]
+# out_path = 'data/studies/batch_size/17to23/'
+# plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel,
+#         legend_title)
+
+
+
 ttH_plotter = ttHComparePlotter()
 ttH_path = 'data/executed/analyses_ttH/'
 ttH_subpath = 'cross_checks/'

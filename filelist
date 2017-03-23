@@ -1,12 +1,2 @@
-training/train_penalty_10.py
-training/train_penalty_11.py
-training/train_penalty_12.py
-training/train_penalty_1.py
-training/train_penalty_2.py
-training/train_penalty_3.py
-training/train_penalty_4.py
-training/train_penalty_5.py
-training/train_penalty_6.py
-training/train_penalty_7.py
-training/train_penalty_8.py
-training/train_penalty_9.py
+training/train_batch_size_14.py
+training/train_batch_size_16.py
