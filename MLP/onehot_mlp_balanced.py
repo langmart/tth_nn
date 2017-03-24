@@ -255,7 +255,6 @@ class OneHotMLP:
             # initialize all variables
             init = tf.initialize_all_variables()
             saver = tf.train.Saver(weights + biases)
-        train_start = time.time()
         
         # Non-static memory management; memory can be allocated on the fly.
         sess_config = tf.ConfigProto()
@@ -1041,6 +1040,73 @@ class OneHotMLP:
             plt.legend(loc='upper left')
             plt.savefig(self.hists_savedir_val + str(epoch) + '_' +
                     str(i+1)+'_predicted.pdf')
+            plt.clf()
+        # Draw again with logarithmic bins
+        for i in range(train_pred.shape[1]):
+            # sort the predicted values into the true categories. Just for
+            # plotting. 
+            for j in range(train_pred.shape[1]):
+                histo_list = []
+                for k in range(train_pred.shape[0]):
+                    if (np.argmax(train_true[k]) == j):
+                        histo_list.append(train_pred[k,i])
+                plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
+                        normed=True, histtype='step',label=self.labels_text[j],
+                        log=True)
+            plt.xlabel('{} node output'.format(self.labels_text[i]))
+            plt.ylabel('Arbitrary units.')
+            plt.title('{} node output on training set'.format(self.labels_text[i]))
+            plt.legend(loc='upper center')
+            plt.savefig(self.hists_savedir_train + str(epoch) + '_' + str(i+1)+
+                    '_log.pdf')
+            plt.clf()
+        for i in range(val_pred.shape[1]):
+            for j in range(val_pred.shape[1]):
+                histo_list = []
+                for k in range(val_pred.shape[0]):
+                    if (np.argmax(val_true[k]) == j):
+                        histo_list.append(val_pred[k,i])
+                plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
+                        normed=True, histtype='step',label=self.labels_text[j],
+                        log=True)
+            plt.xlabel('{} node output'.format(self.labels_text[i]))
+            plt.ylabel('Arbitrary units.')
+            plt.title('{} node output on validation set'.format(self.labels_text[i]))
+            plt.legend(loc='upper center')
+            plt.savefig(self.hists_savedir_val + str(epoch) + '_' + str(i+1)+
+                    '_log.pdf')
+            plt.clf()
+        for i in range(train_pred.shape[1]):
+            for j in range(train_pred.shape[1]):
+                for k in range(train_pred.shape[0]):
+                    if ((np.argmax(train_true[k]) == j) and
+                            (np.argmax(train_pred[k]) == i)):
+                        histo_list.append(train_pred[k,i])
+                plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
+                        normed=True, histtype='step',label=self.labels_text[j],
+                        log=True)
+            plt.xlabel('{} node output'.format(self.labels_text[i]))
+            plt.ylabel('Arbitrary units.')
+            plt.title('output for predicted {} on the training set'.format(self.labels_text[i]))
+            plt.legend(loc='upper left')
+            plt.savefig(self.hists_savedir_train + str(epoch) + '_' +
+                    str(i+1)+'_predicted_log.pdf')
+            plt.clf()
+        for i in range(val_pred.shape[1]):
+            for j in range(val_pred.shape[1]):
+                for k in range(val_pred.shape[0]):
+                    if ((np.argmax(val_true[k]) == j) and
+                            (np.argmax(val_pred[k]) == i)):
+                        histo_list.append(val_pred[k,i])
+                plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
+                        normed=True, histtype='step',label=self.labels_text[j],
+                        log=True)
+            plt.xlabel('{} node output'.format(self.labels_text[i]))
+            plt.ylabel('Arbitrary units.')
+            plt.title('output for predicted {} on the validation set'.format(self.labels_text[i]))
+            plt.legend(loc='upper left')
+            plt.savefig(self.hists_savedir_val + str(epoch) + '_' +
+                    str(i+1)+'_predicted_log.pdf')
             plt.clf()
         print('Done')
 
