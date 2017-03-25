@@ -331,6 +331,11 @@ class OneHotMLP:
                     t0 = time.time()
                     self._plot_hists(train_pre, val_pre, train_data.y,
                             val_data.y, 1)
+                    app = '_{}'.format(epoch+1)
+                    self._write_list(train_pre, 'train_pred' + app)
+                    self._write_list(train_data.y, 'train_true' + app)
+                    self._write_list(val_pre, 'val_pred' + app)
+                    self._write_list(val_data.y, 'val_true' + app)
                     t1 = time.time()
                     times_list.append(t1 - t0)
 
@@ -361,6 +366,11 @@ class OneHotMLP:
                         self._plot_hists(best_train_pred, best_val_pred,
                                 best_train_true, best_val_true, best_epoch+1)
                         self._find_most_important_weights(weights_list[best_epoch])
+                        app = '_{}'.format(best_epoch+1)
+                        self._write_list(best_train_pred, 'train_pred' + app)
+                        self._write_list(best_train_true, 'train_true' + app)
+                        self._write_list(best_val_pred, 'val_pred' + app)
+                        self._write_list(best_val_true, 'val_true' + app)
                         t1 = time.time()
                         times_list.append(t1 - t0)
                         break
@@ -372,12 +382,7 @@ class OneHotMLP:
                     self._plot_loss(train_losses)
                     self._plot_accuracy(train_accuracy, val_accuracy, train_cats,
                             val_cats, epochs)
-                    # self._plot_weight_matrices(weights, epoch)
                     self._plot_cross(train_cross, val_cross, epoch + 1)
-                    # self._plot_hists(train_pre, val_pre, train_data.y,
-                    #         val_data.y, epoch+1)
-                    # self._plot_cross_dev(cross_train_list, cross_val_list,
-                    #         epoch+1)
                     t1 = time.time()
                     times_list.append(t1 - t0)
 
@@ -400,6 +405,11 @@ class OneHotMLP:
             self._write_list(train_losses, 'train_losses')
             self._write_list(train_accuracy, 'train_accuracy')
             self._write_list(val_accuracy, 'val_accuracy')
+            app = '_{}'.format(epoch+1)
+            self._write_list(train_pre, 'train_pred' + app)
+            self._write_list(train_data.y, 'train_true' + app)
+            self._write_list(val_pre, 'val_pred' + app)
+            self._write_list(val_data.y, 'val_true' + app)
             if not (self.enable_early == 'yes'):
                 self._find_most_important_weights(weights)
             self.trained = True
@@ -554,20 +564,6 @@ class OneHotMLP:
             return tf.tanh
 
 
-    # def _onehot(self, arr, length):
-    #     """Converts an array to onehot format."""
-    #     for i in range(arr.shape[0]):
-    #         arr2 = arr[i]
-    #         ind = np.argmax(arr2)
-    #         for j in range(arr2.shape[0]):
-    #             if (j == ind):
-    #                 arr2[j] = 1.0
-    #             else:
-    #                 arr2[j] = 0.0
-    #         arr[i] = arr2
-    #     return arr
-
-
     def _write_parameters(self, epochs, batch_size, keep_prob, beta, time,
             early_stop, val_acc_last):
         """Writes network parameters in a .txt. file
@@ -611,8 +607,6 @@ class OneHotMLP:
         plt.legend(bbox_to_anchor=(1,1))
         plt.grid(True)
         plt.savefig(self.savedir + '/loss.pdf')
-        # plt.savefig(self.savedir + '/loss.png')
-        # plt.savefig(self.savedir + '/loss.eps')
         plt.clf()
 
 
@@ -628,8 +622,6 @@ class OneHotMLP:
         plt.grid(True)
         plt_name = self.name + '_accuracy'
         plt.savefig(self.savedir + '/' + plt_name + '.pdf')
-        # plt.savefig(self.savedir + '/' + plt_name + '.png')
-        # plt.savefig(self.savedir + '/' + plt_name + '.eps')
         plt.clf()
         
         arr = np.zeros((self.out_size, len(train_cats)))
@@ -645,8 +637,6 @@ class OneHotMLP:
         plt.grid(True)
         plt_name = self.name + '_categories_train'
         plt.savefig(self.savedir + '/' + plt_name + '.pdf')
-        # plt.savefig(self.savedir + '/' + plt_name + '.png')
-        # plt.savefig(self.savedir + '/' + plt_name + '.eps')
         plt.clf()
         arr = np.zeros((self.out_size, len(val_cats)))
         for i in range(len(val_cats)):
@@ -661,8 +651,6 @@ class OneHotMLP:
         plt.grid(True)
         plt_name = self.name + '_categories_val'
         plt.savefig(self.savedir + '/' + plt_name + '.pdf')
-        # plt.savefig(self.savedir + '/' + plt_name + '.png')
-        # plt.savefig(self.savedir + '/' + plt_name + '.eps')
         plt.clf()
     
 
@@ -720,8 +708,6 @@ class OneHotMLP:
         else:
             plt.title("Heatmap: Training after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train.pdf'.format(epoch))
-        # plt.savefig(self.cross_savedir + '/{}_train.eps'.format(epoch))
-        # plt.savefig(self.cross_savedir + '/{}_train.png'.format(epoch))
         plt.clf()
         cmap = matplotlib.cm.RdYlBu_r
         plt.pcolormesh(xn, yn, arr_val_float, cmap=cmap, vmin=0.0, vmax=1.0)
@@ -740,8 +726,6 @@ class OneHotMLP:
         else:
             plt.title("Heatmap: Validation after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation.pdf'.format(epoch))
-        # plt.savefig(self.cross_savedir + '/{}_validation.eps'.format(epoch))
-        # plt.savefig(self.cross_savedir + '/{}_validation.png'.format(epoch))
         plt.clf()
         
         # Draw again with LogNorm colors
@@ -765,8 +749,6 @@ class OneHotMLP:
         else:
             plt.title("Heatmap: Training after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog.pdf'.format(epoch))
-        # plt.savefig(self.cross_savedir + '/{}_train_colorlog.eps'.format(epoch))
-        # plt.savefig(self.cross_savedir + '/{}_train_colorlog.png'.format(epoch))
         plt.clf()
         cmap = matplotlib.cm.RdYlBu_r
         cmap.set_bad(color='white')
@@ -788,8 +770,6 @@ class OneHotMLP:
         else:
             plt.title("Heatmap: Validation after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation_colorlog.pdf'.format(epoch))
-        # plt.savefig(self.cross_savedir + '/{}_validation_colorlog.eps'.format(epoch))
-        # plt.savefig(self.cross_savedir + '/{}_validation_colorlog.png'.format(epoch))
         plt.clf()
 
         # Draw again with absolute numbers
@@ -818,8 +798,6 @@ class OneHotMLP:
         else:
             plt.title("Heatmap: Training after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute.pdf'.format(epoch))
-        # plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute.eps'.format(epoch))
-        # plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute.png'.format(epoch))
         plt.clf()
         cmap = matplotlib.cm.RdYlBu_r
         cmap.set_bad(color='white')
@@ -846,8 +824,6 @@ class OneHotMLP:
         else:
             plt.title("Heatmap: Validation after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute.pdf'.format(epoch))
-        # plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute.eps'.format(epoch))
-        # plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute.png'.format(epoch))
         plt.clf()
 
         # Draw again with absolute numbers and weights
@@ -876,8 +852,6 @@ class OneHotMLP:
         else:
             plt.title("Heatmap: Training after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute_weights.pdf'.format(epoch))
-        # plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute_weights.eps'.format(epoch))
-        # plt.savefig(self.cross_savedir + '/{}_train_colorlog_absolute_weights.png'.format(epoch))
         plt.clf()
         cmap = matplotlib.cm.RdYlBu_r
         cmap.set_bad(color='white')
@@ -904,8 +878,6 @@ class OneHotMLP:
         else:
             plt.title("Heatmap: Validation after epoch {}".format(epoch))
         plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute_weights.pdf'.format(epoch))
-        # plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute_weights.eps'.format(epoch))
-        # plt.savefig(self.cross_savedir + '/{}_validation_colorlog_absolute_weights.png'.format(epoch))
         plt.clf()
 
 
@@ -935,17 +907,9 @@ class OneHotMLP:
             if (early=='yes'):
                 plt.savefig(self.weights_savedir + 
                         '/epoch{}_weight{}_early.pdf'.format(epoch+1, i+1))
-                # plt.savefig(self.weights_savedir + 
-                #         '/epoch{}_weight{}_early.eps'.format(epoch+1, i+1))
-                # plt.savefig(self.weights_savedir + 
-                #         '/epoch{}_weight{}_early.png'.format(epoch+1, i+1))
             else:
                 plt.savefig(self.weights_savedir + 
                         '/epoch{}_weight{}.pdf'.format(epoch+1, i+1))
-                # plt.savefig(self.weights_savedir + 
-                #         '/epoch{}_weight{}.eps'.format(epoch+1, i+1))
-                # plt.savefig(self.weights_savedir + 
-                #         '/epoch{}_weight{}.png'.format(epoch+1, i+1))
             plt.clf()
 
 
@@ -984,59 +948,57 @@ class OneHotMLP:
             # sort the predicted values into the true categories. Just for
             # plotting. 
             for j in range(train_pred.shape[1]):
-                histo_list = []
-                for k in range(train_pred.shape[0]):
-                    if (np.argmax(train_true[k]) == j):
-                        histo_list.append(train_pred[k,i])
+                arr = np.where(np.argmax(train_true, axis=1)==j)
+                histo_list = np.transpose(train_pred[arr,i])
+                # By the way, histo_list is an array
                 plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
                         normed=True, histtype='step',label=self.labels_text[j])
             plt.xlabel('{} node output'.format(self.labels_text[i]))
             plt.ylabel('Arbitrary units.')
             plt.title('{} node output on training set'.format(self.labels_text[i]))
-            plt.legend(loc='upper center')
+            plt.legend(loc='best')
             plt.savefig(self.hists_savedir_train + str(epoch) + '_' + str(i+1)+ '.pdf')
             plt.clf()
         for i in range(val_pred.shape[1]):
             for j in range(val_pred.shape[1]):
-                histo_list = []
-                for k in range(val_pred.shape[0]):
-                    if (np.argmax(val_true[k]) == j):
-                        histo_list.append(val_pred[k,i])
+                arr = np.where(np.argmax(val_true, axis=1)==j)
+                histo_list = np.transpose(val_pred[arr, i])
                 plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
                         normed=True, histtype='step',label=self.labels_text[j])
             plt.xlabel('{} node output'.format(self.labels_text[i]))
             plt.ylabel('Arbitrary units.')
             plt.title('{} node output on validation set'.format(self.labels_text[i]))
-            plt.legend(loc='upper center')
+            plt.legend(loc='best')
             plt.savefig(self.hists_savedir_val + str(epoch) + '_' + str(i+1)+ '.pdf')
             plt.clf()
         for i in range(train_pred.shape[1]):
             for j in range(train_pred.shape[1]):
-                for k in range(train_pred.shape[0]):
-                    if ((np.argmax(train_true[k]) == j) and
-                            (np.argmax(train_pred[k]) == i)):
-                        histo_list.append(train_pred[k,i])
+                arr1 = (np.argmax(train_true, axis=1)==j)
+                arr2 = (np.argmax(train_pred, axis=1)==i)
+                arr = np.multiply(arr1, arr2)
+                histo_list = train_pred[arr,i]
+                
                 plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
                         normed=True, histtype='step',label=self.labels_text[j])
             plt.xlabel('{} node output'.format(self.labels_text[i]))
             plt.ylabel('Arbitrary units.')
             plt.title('output for predicted {} on the training set'.format(self.labels_text[i]))
-            plt.legend(loc='upper left')
+            plt.legend(loc='best')
             plt.savefig(self.hists_savedir_train + str(epoch) + '_' +
                     str(i+1)+'_predicted.pdf')
             plt.clf()
         for i in range(val_pred.shape[1]):
             for j in range(val_pred.shape[1]):
-                for k in range(val_pred.shape[0]):
-                    if ((np.argmax(val_true[k]) == j) and
-                            (np.argmax(val_pred[k]) == i)):
-                        histo_list.append(val_pred[k,i])
+                arr1 = (np.argmax(val_true, axis=1)==j)
+                arr2 = (np.argmax(val_pred, axis=1)==i)
+                arr = np.multiply(arr1, arr2)
+                histo_list = val_pred[arr,i]
                 plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
                         normed=True, histtype='step',label=self.labels_text[j])
             plt.xlabel('{} node output'.format(self.labels_text[i]))
             plt.ylabel('Arbitrary units.')
             plt.title('output for predicted {} on the validation set'.format(self.labels_text[i]))
-            plt.legend(loc='upper left')
+            plt.legend(loc='best')
             plt.savefig(self.hists_savedir_val + str(epoch) + '_' +
                     str(i+1)+'_predicted.pdf')
             plt.clf()
@@ -1045,65 +1007,61 @@ class OneHotMLP:
             # sort the predicted values into the true categories. Just for
             # plotting. 
             for j in range(train_pred.shape[1]):
-                histo_list = []
-                for k in range(train_pred.shape[0]):
-                    if (np.argmax(train_true[k]) == j):
-                        histo_list.append(train_pred[k,i])
+                arr = np.where(np.argmax(train_true, axis=1)==j)
+                histo_list = np.transpose(train_pred[arr,i])
                 plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
                         normed=True, histtype='step',label=self.labels_text[j],
                         log=True)
             plt.xlabel('{} node output'.format(self.labels_text[i]))
             plt.ylabel('Arbitrary units.')
             plt.title('{} node output on training set'.format(self.labels_text[i]))
-            plt.legend(loc='upper center')
+            plt.legend(loc='best')
             plt.savefig(self.hists_savedir_train + str(epoch) + '_' + str(i+1)+
                     '_log.pdf')
             plt.clf()
         for i in range(val_pred.shape[1]):
             for j in range(val_pred.shape[1]):
-                histo_list = []
-                for k in range(val_pred.shape[0]):
-                    if (np.argmax(val_true[k]) == j):
-                        histo_list.append(val_pred[k,i])
+                arr = np.where(np.argmax(val_true, axis=1)==j)
+                histo_list = np.transpose(val_pred[arr,i])
                 plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
                         normed=True, histtype='step',label=self.labels_text[j],
                         log=True)
             plt.xlabel('{} node output'.format(self.labels_text[i]))
             plt.ylabel('Arbitrary units.')
             plt.title('{} node output on validation set'.format(self.labels_text[i]))
-            plt.legend(loc='upper center')
+            plt.legend(loc='best')
             plt.savefig(self.hists_savedir_val + str(epoch) + '_' + str(i+1)+
                     '_log.pdf')
             plt.clf()
         for i in range(train_pred.shape[1]):
             for j in range(train_pred.shape[1]):
-                for k in range(train_pred.shape[0]):
-                    if ((np.argmax(train_true[k]) == j) and
-                            (np.argmax(train_pred[k]) == i)):
-                        histo_list.append(train_pred[k,i])
+                arr1 = (np.argmax(train_true, axis=1)==j)
+                arr2 = (np.argmax(train_pred, axis=1)==i)
+                arr = np.multiply(arr1, arr2)
+                histo_list = train_pred[arr,i]
                 plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
                         normed=True, histtype='step',label=self.labels_text[j],
                         log=True)
             plt.xlabel('{} node output'.format(self.labels_text[i]))
             plt.ylabel('Arbitrary units.')
             plt.title('output for predicted {} on the training set'.format(self.labels_text[i]))
-            plt.legend(loc='upper left')
+            plt.legend(loc='best')
             plt.savefig(self.hists_savedir_train + str(epoch) + '_' +
                     str(i+1)+'_predicted_log.pdf')
             plt.clf()
         for i in range(val_pred.shape[1]):
             for j in range(val_pred.shape[1]):
-                for k in range(val_pred.shape[0]):
-                    if ((np.argmax(val_true[k]) == j) and
-                            (np.argmax(val_pred[k]) == i)):
-                        histo_list.append(val_pred[k,i])
+                arr1 = (np.argmax(val_true, axis=1)==j)
+                arr2 = (np.argmax(val_pred, axis=1)==i)
+                arr = np.multiply(arr1, arr2)
+                histo_list = val_pred[arr,i]
                 plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
                         normed=True, histtype='step',label=self.labels_text[j],
                         log=True)
             plt.xlabel('{} node output'.format(self.labels_text[i]))
             plt.ylabel('Arbitrary units.')
             plt.title('output for predicted {} on the validation set'.format(self.labels_text[i]))
-            plt.legend(loc='upper left')
+            plt.legend(loc='best')
             plt.savefig(self.hists_savedir_val + str(epoch) + '_' +
                     str(i+1)+'_predicted_log.pdf')
             plt.clf()
