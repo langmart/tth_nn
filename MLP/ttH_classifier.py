@@ -17,7 +17,7 @@ import time
 import pickle
 os.environ['CUDA_VISIBLE_DEVICES'] = "2"
 
-# from sklearn.metrics import roc_auc_score, roc_curve
+from sklearn.metrics import roc_auc_score, roc_curve
 
 class OneHotMLP:
     """A one-hot output vector classifier using a multi layer perceptron.
@@ -287,6 +287,9 @@ class OneHotMLP:
             train_losses = []
             train_cats = []
             val_cats = []
+            train_auc = []
+            val_auc = []
+
             train_data.normalize()
             val_data.normalize()
             early_stopping = {'val_purity': 0.0, 'val_significance': 0.0, 'epoch': 0}
@@ -333,6 +336,8 @@ class OneHotMLP:
                         (train_w_ttH + train_w_misclass)))
                 train_ttH_list.append(train_w_ttH)
                 train_mis_list.append(train_w_misclass)
+                train_auc.append(self._get_auc(train_data.y, train_pre,
+                    train_data.w))
                 
                 val_pre = sess.run(yy_, {x:val_data.x})
                 val_ttH, val_misclass, val_cross, val_cat = self._validate_epoch(val_pre,
@@ -348,6 +353,7 @@ class OneHotMLP:
                 val_mis_list.append(val_w_misclass)
                 val_prod = val_purity[-1] * val_significance[-1]
                 val_prod_list.append(val_prod)
+                val_auc.append(self._get_auc(val_data.y, val_pre, val_data.w))
                 
                 print('{:^10} | {:^14.4f} | {:^23.4f} | {:^23.4f} | {:^30.4f} | {:^12.4f}'.format(
                     epoch + 1, train_losses[-1], train_purity[-1], val_purity[-1], 
@@ -360,6 +366,10 @@ class OneHotMLP:
 
                 if (epoch == 0):
                     t0 = time.time()
+                    self._plot_roc_curve(train_data.y, train_pre, 
+                            train_data.w, epoch + 1, 'train')
+                    self._plot_roc_curve(val_data.y, val_pre, 
+                            val_data.w, epoch + 1, 'val')
                     self._plot_hists(train_pre, val_pre, train_data.y,
                             val_data.y, 1)
                     app = '_{}'.format(epoch+1)
@@ -380,8 +390,10 @@ class OneHotMLP:
                         early_stopping['val_significance'] = val_significance[-1]
                         best_train_pred = train_pre
                         best_train_true = train_data.y
+                        best_train_weights = train_data.w
                         best_val_pred = val_pre
                         best_val_true = val_data.y
+                        best_val_weights = val_data.w
                         early_stopping['val_purity'] = val_purity[-1]
                         early_stopping['epoch'] = epoch
                     elif ((epoch+1 - early_stopping['epoch']) > self.early_stop):
@@ -393,6 +405,12 @@ class OneHotMLP:
                                     early_stopping['val_purity'],
                                     early_stopping['epoch']+1))
                         best_epoch = early_stopping['epoch']
+                        self._plot_roc_curve(best_train_true, best_train_pred, 
+                                best_train_weights,
+                                best_epoch + 1, 'train')
+                        self._plot_roc_curve(best_val_true, best_val_pred,
+                                best_val_weights,
+                                best_epoch + 1, 'val')
                         self._plot_weight_matrices(weights_list[best_epoch],
                                 best_epoch, early='yes')
                         self._plot_cross(cross_train_list[best_epoch],
@@ -400,7 +418,8 @@ class OneHotMLP:
                                 early='yes')
                         self._plot_hists(best_train_pred, best_val_pred,
                                 best_train_true, best_val_true, best_epoch+1)
-                        self._find_most_important_weights(weights_list[best_epoch])
+                        self._find_most_important_weights(weights_list[best_epoch],
+                                n=30)
                         app = '_{}'.format(best_epoch+1)
                         self._write_list(best_train_pred, 'train_pred' + app)
                         self._write_list(best_train_true, 'train_true' + app)
@@ -414,6 +433,10 @@ class OneHotMLP:
 
                 if (epoch % 10 == 0):
                     t0 = time.time()
+                    self._plot_roc_curve(train_data.y, train_pre,
+                            train_data.w, epoch + 1, 'train')
+                    self._plot_roc_curve(val_data.y, val_pre,
+                            val_data.w, epoch + 1, 'val')
                     self._plot_loss(train_losses)
                     self._plot_purity(train_purity, val_purity, train_cats,
                             val_cats, epochs)
@@ -425,6 +448,11 @@ class OneHotMLP:
             train_end=time.time()
             dtime = train_end - train_start - sum(times_list)
 
+            self._plot_auc_dev(train_auc, val_auc, epochs)
+            self._plot_roc_curve(train_data.y, train_pre,
+                    train_data.w, epoch + 1, 'train')
+            self._plot_roc_curve(val_data.y, val_pre,
+                    val_data.w, epoch + 1, 'val')
             self._plot_purity(train_purity, val_purity, train_cats,
                     val_cats, epochs)
             self._plot_loss(train_losses)
@@ -1242,6 +1270,47 @@ class OneHotMLP:
             # plt.savefig(self.mistag_savedir + 'val_as_x_{}.eps'.format(i))
             plt.clf()
 
+    def _get_auc(self, arr_true, arr_pre, arr_weights):
+        arr_true_bin = (np.argmax(arr_true, axis=1) == 0).astype(int)
+        arr_pre_roc = arr_pre[:,0]
+        auc = roc_auc_score(arr_true_bin, arr_pre_roc, sample_weight=arr_weights)
+        return auc
+        
+    
+    def _plot_roc_curve(self, arr_true, arr_pre, arr_weights, epoch, indicator):
+        arr_true_bin = (np.argmax(arr_true, axis=1) == 0).astype(int)
+        arr_pre_roc = arr_pre[:,0]
+        fpr, tpr, thresholds = roc_curve(arr_true_bin, arr_pre_roc,
+                sample_weight=arr_weights)
+        auc = roc_auc_score(arr_true_bin, arr_pre_roc, sample_weight=arr_weights)
+        
+        plt.plot(tpr, np.ones(len(fpr)) - fpr, 
+                label=r'ROC curve (AUC: {:.4f})'.format(auc), color='darkorange')
+        plt.title(r'Receiver operating characteristic (ROC)')
+        plt.xlabel(r'Signal efficiency')
+        plt.ylabel(r'Background rejection')
+        plt.legend(loc='best')
+        plt.xlim(0, 1.05)
+        plt.ylim(0, 1.05)
+        plt.grid(True)
+        if (indicator == 'train'):
+            name_appendix = '_train'
+        if (indicator == 'val'):
+            name_appendix = '_val'
+        plt.savefig(self.cross_savedir + '/roc_{}'.format(epoch) + name_appendix + '.pdf')
+        plt.clf()
+
+    def _plot_auc_dev(self, train_auc, val_auc, epochs):
+        plt.plot(train_auc, label=r'AUC training', color='darkorange')
+        plt.plot(val_auc, label=r'AUC validation', color='navy')
+        plt.xlabel(r'Epoch')
+        plt.ylabel(r'AUC score')
+        plt.title(r'Area under the receiver operating characteristic curve')
+        plt.grid(True)
+        plt.legend(loc='best')
+        plt.savefig(self.savedir + '/auc_dev.pdf')
+        plt.clf()
+    
     def _find_most_important_weights(self, w, n=10):
         # Only consider the first hidden layer.
         weight = w[0].eval()
@@ -1254,7 +1323,7 @@ class OneHotMLP:
         indices = []
         branchnames = []
 
-        for i in range(10):
+        for i in range(n):
             index = np.argmax(weight_abs_mean)
             indices.append(index)
             values.append(weight_abs_mean[index])
@@ -1263,7 +1332,7 @@ class OneHotMLP:
 
 
         with open (self.cross_savedir + '/most_important_variables.txt', 'w') as f:
-            for i in range(10):
+            for i in range(n):
                 f.write('branch: {}, mean_abs: {}\n'.format(branchnames[i],
                     values[i]))
 

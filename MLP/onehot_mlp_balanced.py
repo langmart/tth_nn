@@ -366,7 +366,8 @@ class OneHotMLP:
                                 early='yes')
                         self._plot_hists(best_train_pred, best_val_pred,
                                 best_train_true, best_val_true, best_epoch+1)
-                        self._find_most_important_weights(weights_list[best_epoch])
+                        self._find_most_important_weights(weights_list[best_epoch],
+                                n=30)
                         app = '_{}'.format(best_epoch+1)
                         self._write_list(best_train_pred, 'train_pred' + app)
                         self._write_list(best_train_true, 'train_true' + app)
@@ -1187,7 +1188,7 @@ class OneHotMLP:
         indices = []
         branchnames = []
 
-        for i in range(10):
+        for i in range(n):
             index = np.argmax(weight_abs_mean)
             indices.append(index)
             values.append(weight_abs_mean[index])
@@ -1196,7 +1197,7 @@ class OneHotMLP:
 
 
         with open (self.cross_savedir + '/most_important_variables.txt', 'w') as f:
-            for i in range(10):
+            for i in range(n):
                 f.write('branch: {}, mean_abs: {}\n'.format(branchnames[i],
                     values[i]))
 
