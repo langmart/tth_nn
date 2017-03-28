@@ -27,8 +27,10 @@ categories_list = [['30', '20', '10', '01', 'light'], ['30','light'], ['30',
 # 
 preselection = 'no'
 savedir='/storage/7/lang/nn_data/converted'
-# get_branches = GetBranches('/storage/7/lang/nn_data', branchlist, categorylist, out_size)
-get_branches = GetBranches()
+# Cross sections in femtobarn.
+sigma_ttH_bb_SL = 85.4
+sigma_ttbar_SL = 244100
+get_branches = GetBranches(sigma_ttH_bb_SL, sigma_ttbar_SL)
 get_branches.process(ttH_Even, ttbarSL_Even, arr_name='even_', savedir=savedir, 
         branchlists=branchlists, categories_list=categories_list,
         preselection=preselection)

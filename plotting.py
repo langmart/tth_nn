@@ -150,6 +150,7 @@ labels = ['$\eta = 0.05$', '$\eta = 0.02$', '$\eta = 0.01$',
 out_path = 'data/studies/lrate'
 plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
 
+# learning rates
 paths_1 = ['lrate_3', 'lrate_4', 'lrate_5', 'lrate_6',
         'lrate_7', 'lrate_8', 'lrate_9', 'lrate_10', 'lrate_11']
 paths = [a_path + i for i in paths_1]
@@ -160,6 +161,17 @@ labels = ['$\eta = 0.02$', '$\eta = 0.01$',
         '$\eta = 10^{-4}$', '$\eta = 5\cdot 10^{-5}$']
 out_path = 'data/studies/lrate_corrected'
 plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
+paths_1 = ['lrate_3', 'lrate_4', 'lrate_5', 'lrate_6',
+        'lrate_7', 'lrate_8']
+paths = [a_path + i for i in paths_1]
+title = 'Validation accuracy'
+labels = ['$\eta = 0.02$', '$\eta = 0.01$', 
+        '$\eta = 0.005$', '$\eta = 0.002$', '$\eta = 0.001$', 
+        '$\eta = 5\cdot 10^{-4}$']
+out_path = 'data/studies/lrate_corrected_2'
+plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
+
+
 
 a_path = 'data/executed/analyses/graddescent/'
 subpaths = ['cross_checks/train_accuracy.txt', 'cross_checks/val_accuracy.txt']
@@ -189,6 +201,7 @@ labels = ['training set', 'validation set']
 out_path = 'data/studies/no_overfit/train_val_dropout/'
 tv_plotter.plot(a_path, subpaths, title, labels, [30,40], out_path, ylabel)
 
+# Architectures 
 a_path = 'data/executed/training/architecture/'
 paths_1 = ['1x20', '1x50', '1x100', '1x200', '2x20', '2x50', '2x100', '2x200']
 paths = [a_path + 'train_' + i for i in paths_1]
@@ -230,6 +243,15 @@ paths = [a_path + 'train_' + i for i in paths_1]
 out_path = 'data/studies/architecture/x200/'
 plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
 
+paths_1 = ['5x20', '5x50', '5x100', '5x200']
+labels = paths_1
+title = 'Validation accuracy'
+paths = [a_path + 'train_' + i for i in paths_1]
+out_path = 'data/studies/architecture/5x/'
+plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
+
+
+# batch sizes
 a_path = 'data/executed/analyses/batch_size/'
 paths_1 = ['bs_1', 'bs_2', 'bs_3', 'bs_4', 'bs_5', 'bs_6', 'bs_7', 'bs_8']
 labels = ['100', '150', '200', '250', '300', '400', '500', '600']
@@ -247,23 +269,52 @@ paths = [a_path + i for i in paths_1]
 out_path = 'data/studies/batch_size/9to14/'
 plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel,
         legend_title)
-# paths_1 = ['bs_9', 'bs_10', 'bs_11', 'bs_12', 'bs_13', 'bs_14', 'bs_15', 'bs_16']
-# labels = ['800', '1000', '1200', '1500', '2000', '2500', '3000', '4000']
-# title = 'Validation accuracy'
-# legend_title = 'Batch size'
-# paths = [a_path + i for i in paths_1]
-# out_path = 'data/studies/batch_size/9to16/'
-# plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel,
-#         legend_title)
-# paths_1 = ['bs_17', 'bs_18', 'bs_19', 'bs_20', 'bs_21', 'bs_22', 'bs_23']
-# labels = ['5000', '7000', '10000', '15000', '20000', '25000', '30000']
-# title = 'Validation accuracy'
-# legend_title = 'Batch size'
-# paths = [a_path + i for i in paths_1]
-# out_path = 'data/studies/batch_size/17to23/'
-# plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel,
-#         legend_title)
 
+# # dropout values
+# a_path = 'data/executed/analyses/keep-prob/'
+# paths_1 = ['keep-prob_1', 'keep-prob_2', 'keep-prob_3', 'keep-prob_4',
+#         'keep-prob_5', 'keep-prob_6', 'keep-prob_7', 'keep-prob_8']
+# labels = ['d=0.3', 'd=0.35', 'd=0.4', 'd=0.45', 'd=0.5', 'd=0.55', 'd=0.6',
+#         'd=0.65']
+# title = 'Validation accuracy'
+# legend_title = 'Dropout value'
+# paths = [a_path + i for i in paths_1]
+# out_path = 'data/studies/dropout-value/1to8/'
+# plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel,
+#         legend_title)
+# paths_1 = ['keep-prob_9', 'keep-prob_10', 'keep-prob_11', 'keep-prob_12',
+#         'keep-prob_13', 'keep-prob_14', 'keep-prob_15']
+# labels = ['d=0.7', 'd=0.75', 'd=0.8', 'd=0.85', 'd=0.9', 'd=0.95', 'd=1.0']
+# title = 'Validation accuracy'
+# legend_title = 'Dropout value'
+# paths = [a_path + i for i in paths_1]
+# out_path = 'data/studies/dropout-value/9to15/'
+# plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel,
+#         legend_title)
+# 
+# # l2 regularization parameters
+# a_path = 'data/executed/analysis/l2_values'
+# paths_1 = ['l2_1', 'l2_2', 'l2_3', 'l2_4', 'l2_5', 'l2_6', 'l2_7']
+# labels = ['$\beta = 10^{-6}$', '$\beta = 5\cdot 10^{-7}$', 
+#         '$\beta = 2\cdot 10^{-7}$', '$\beta = 10^{-7}$', 
+#         '$\beta = 5\cdot 10^{-8}$', '$\beta = 2\cdot 10^{-8}$', 
+#         '$\beta = 10^{-8}$']
+# title = 'Validation accuracy'
+# legend_title = 'l2 regularization'
+# paths = [a_path + i for i in paths_1]
+# out_path = 'data/studies/l2-value/1to7/'
+# plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel,
+#         legend_title)
+# paths_1 = ['l2_8', 'l2_9', 'l2_10', 'l2_11', 'l2_12', 'l2_13']
+# labels = ['$\beta = 5\cdot 10^{-9}$', '$\beta = 2\cdot 10^{-9}$', 
+#         '$\beta = 10^{-9}$', '$\beta = 5\cdot 10^{-10}$', 
+#         '$\beta = 2\cdot 10^{-10}$', '$\beta = 10^{-10}$']
+# title = 'Validation accuracy'
+# legend_title = 'l2 regularization'
+# paths = [a_path + i for i in paths_1]
+# out_path = 'data/studies/l2-value/8to13/'
+# plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel,
+#         legend_title)
 
 
 ttH_plotter = ttHComparePlotter()

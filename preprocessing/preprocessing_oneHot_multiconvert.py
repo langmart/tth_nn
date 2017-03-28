@@ -25,7 +25,7 @@ class GetBranches:
         Path to the directory the processed array will be saved to.
     """
 
-    def __init__(self):
+    def __init__(self, sigma_sig, sigma_bg):
         """Initializes the class with the given attributes.
 
         Attributes:
@@ -40,6 +40,8 @@ class GetBranches:
             Dimension of the output vector (labels must be of according
             dimension; by default 1 signal + 5 different backgrounds.
         """
+        self.sigma_sig = sigma_sig
+        self.sigma_bg = sigma_bg
 
 
     def process(self, signal_path, background_path, arr_name, savedir,
@@ -138,20 +140,23 @@ class GetBranches:
                 n_sig_events = sig['data'].shape[0]
                 n_bg_events = bg['data'].shape[0]
                 bg_numbers = self._get_numbers(structured_bg)
-                # print(bg_numbers)
+                numbers_tot = []
+                numbers_tot.append(n_sig_events)
+                for ite in range(len(bg_numbers)):
+                    numbers_tot.append(bg_numbers[ite])
 
 
                 categories_name = ''
                 for i in self.categories:
                     categories_name += '_'+i
                 print('Found categories: {}. '.format(self.categories))
-                for weights_to_choose in range(4):
+                for weights_to_choose in range(5):
                     print('Getting categories and labels, ')
                     sign = self._get_categories_and_labels(sig, structured_sig,
                             n_sig_events, 'sig', n_sig_events, n_sig_events,
-                            weights_to_choose)
+                            weights_to_choose, numbers_tot)
                     bgn = self._get_categories_and_labels(bg, structured_bg, n_bg_events,
-                    'bg', bg_numbers, n_sig_events, weights_to_choose)
+                    'bg', bg_numbers, n_sig_events, weights_to_choose, numbers_tot)
                     print('done.')
                     print('Further weights have been applied.')
                     if (preselection == 'no'):
@@ -244,7 +249,7 @@ class GetBranches:
 
     
     def _get_categories_and_labels(self, data_dict, structured_array, n_events,
-            label, numbers, n_sig_events, weights_to_choose):
+            label, numbers, n_sig_events, weights_to_choose, numbers_tot):
         """Collects events belonging to the categories and adds labels to them. 
 
         Arguments:
@@ -270,6 +275,7 @@ class GetBranches:
 
 
         bg_total = np.sum(numbers)
+        print(bg_total)
         total = n_sig_events + bg_total
         # keep_events = []
         keep_dict = dict()
@@ -286,9 +292,13 @@ class GetBranches:
                     keep_dict['weights'].append(data_dict['weights'][event] * 1.0 / 
                             n_sig_events)
                 elif (weights_to_choose == 2):
-                    keep_dict['weights'].append([1.0])
+                    keep_dict['weights'].append([float(len(numbers_tot)) / sum(numbers_tot)])
                 elif (weights_to_choose == 3):
-                    keep_dict['weights'].append(data_dict['weights'][event] * 1.0)
+                    keep_dict['weights'].append(data_dict['weights'][event] *
+                            float(len(numbers_tot)) / sum(numbers_tot))
+                elif (weights_to_choose == 4):
+                    keep_dict['weights'].append([1.0 / n_sig_events *
+                            self.sigma_sig])
                 siglab = self._signal_label(label_length)
                 keep_dict['labels'].append(siglab)
             print('    Signal data: {}'.format(len(keep_dict['labels'])))
@@ -313,10 +323,14 @@ class GetBranches:
                             keep_dict['weights'].append(data_dict['weights'][event] 
                                     * 1.0 / numbers[i])
                         elif (weights_to_choose == 2):
-                            keep_dict['weights'].append([1.0])
+                            keep_dict['weights'].append([float(len(numbers_tot))
+                                / sum(numbers_tot)])
                         elif (weights_to_choose == 3):
                             keep_dict['weights'].append(data_dict['weights'][event] 
-                                    * 1.0)
+                                    * float(len(numbers_tot)) / sum(numbers_tot))
+                        elif (weights_to_choose == 4): 
+                            keep_dict['weights'].append([1.0 / bg_total *
+                                    self.sigma_bg])
                         bglab = self._bg_label(category, label_length)
                         keep_dict['labels'].append(bglab)
                         count_dict[category] += 1
