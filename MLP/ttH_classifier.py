@@ -28,7 +28,7 @@ class OneHotMLP:
 
 
     def __init__(self, n_features, h_layers, out_size, savedir, labels_text,
-            branchlist, sig_weight, bg_weight, act_func='tanh'):
+            branchlist, sig_weight, bg_weight, diff_param, act_func='tanh'):
         """Initializes the Classifier.
 
         Arguments:
@@ -67,6 +67,7 @@ class OneHotMLP:
         self.branchlist = branchlist
         self.sig_weight = sig_weight
         self.bg_weight = bg_weight
+        self.diff_param = diff_param
         self.act_func = act_func
 
         # check whether the model file exists
@@ -249,10 +250,13 @@ class OneHotMLP:
             # w_2 = tf.mul(10000.0, (tf.cast(tf.equal(tf.argmax(y_, dimension=1),0),
             #     tf.float32)) * (1.0 - tf.cast(tf.equal(tf.argmax(y,
             #         dimension=1),0), tf.float32))) + 1.0
-            w_2 = 1.0 / batch_size * (self.ttH_penalty * tf.add(
-                self.bg_weight * tf.mul(tf.nn.softmax(y_)[:,0], 
-                (tf.sub(1.0, y[:,0]))), self.sig_weight * tf.mul(
-                tf.sub(1.0, tf.nn.softmax(y_)[:,0]), y[:,0])))
+            w_2 = 1.0 / batch_size * (self.ttH_penalty * tf.add(self.diff_param * 
+                tf.mul(tf.nn.softmax(y_)[:,0], (tf.sub(1.0, y[:,0]))), 
+                tf.mul( tf.sub(1.0, tf.nn.softmax(y_)[:,0]), y[:,0])))
+            # w_2 = 1.0 / batch_size * (self.ttH_penalty * tf.add(
+            #     self.bg_weight * tf.mul(tf.nn.softmax(y_)[:,0], 
+            #     (tf.sub(1.0, y[:,0]))), self.sig_weight * tf.mul(
+            #     tf.sub(1.0, tf.nn.softmax(y_)[:,0]), y[:,0])))
             # loss = tf.add(tf.reduce_sum(tf.mul(w_2, tf.mul(w, xentropy))), l2_reg, name='loss')
             # loss = tf.reduce_mean(w_2)
             # loss = tf.add(tf.add(tf.reduce_sum(tf.mul(w, xentropy)), w_2),
@@ -364,19 +368,27 @@ class OneHotMLP:
                 train_cats.append(train_cat)
                 val_cats.append(val_cat)
 
+                if (epoch % 10 == 0):
+                    t0 = time.time()
+                    self._plot_roc_curve(train_data.y, train_pre,
+                            train_data.w, epoch + 1, 'train')
+                    self._plot_roc_curve(val_data.y, val_pre,
+                            val_data.w, epoch + 1, 'val')
+                    self._plot_loss(train_losses)
+                    self._plot_purity(train_purity, val_purity, train_cats,
+                            val_cats, epochs)
+                    self._plot_cross(train_cross, val_cross, epoch + 1)
+                    t1 = time.time()
+                    times_list.append(t1 - t0)
                 if (epoch == 0):
                     t0 = time.time()
-                    self._plot_roc_curve(train_data.y, train_pre, 
-                            train_data.w, epoch + 1, 'train')
-                    self._plot_roc_curve(val_data.y, val_pre, 
-                            val_data.w, epoch + 1, 'val')
-                    self._plot_hists(train_pre, val_pre, train_data.y,
-                            val_data.y, 1)
                     app = '_{}'.format(epoch+1)
                     self._write_list(train_pre, 'train_pred' + app)
                     self._write_list(train_data.y, 'train_true' + app)
                     self._write_list(val_pre, 'val_pred' + app)
                     self._write_list(val_data.y, 'val_true' + app)
+                    self._plot_hists(train_pre, val_pre, train_data.y,
+                            val_data.y, 1)
                     t1 = time.time()
                     times_list.append(t1 - t0)
 
@@ -405,6 +417,7 @@ class OneHotMLP:
                                     early_stopping['val_purity'],
                                     early_stopping['epoch']+1))
                         best_epoch = early_stopping['epoch']
+                        app = '_{}'.format(best_epoch+1)
                         self._plot_roc_curve(best_train_true, best_train_pred, 
                                 best_train_weights,
                                 best_epoch + 1, 'train')
@@ -420,7 +433,6 @@ class OneHotMLP:
                                 best_train_true, best_val_true, best_epoch+1)
                         self._find_most_important_weights(weights_list[best_epoch],
                                 n=30)
-                        app = '_{}'.format(best_epoch+1)
                         self._write_list(best_train_pred, 'train_pred' + app)
                         self._write_list(best_train_true, 'train_true' + app)
                         self._write_list(best_val_pred, 'val_pred' + app)
@@ -431,18 +443,6 @@ class OneHotMLP:
                 else:
                     save_path = saver.save(sess, self.model_loc)
 
-                if (epoch % 10 == 0):
-                    t0 = time.time()
-                    self._plot_roc_curve(train_data.y, train_pre,
-                            train_data.w, epoch + 1, 'train')
-                    self._plot_roc_curve(val_data.y, val_pre,
-                            val_data.w, epoch + 1, 'val')
-                    self._plot_loss(train_losses)
-                    self._plot_purity(train_purity, val_purity, train_cats,
-                            val_cats, epochs)
-                    self._plot_cross(train_cross, val_cross, epoch + 1)
-                    t1 = time.time()
-                    times_list.append(t1 - t0)
 
             print(110*'-')
             train_end=time.time()
@@ -647,6 +647,7 @@ class OneHotMLP:
             f.write('L2 Regularization: {}\n'.format(beta))
             f.write('Training Time: {} sec.\n'.format(time))
             f.write('ttH penalty: {}\n'.format(self.ttH_penalty))
+            f.write('diff param: {}\n'.format(self.diff_param))
             f.write('Optimizer: {}\n'.format(self.optname))
             f.write('Initial learning rate: {}\n'.format(self.initial_learning_rate))
             f.write('Activation function: {}\n'.format(self.act_func))
@@ -1047,8 +1048,9 @@ class OneHotMLP:
                 arr = np.where(np.argmax(train_true, axis=1)==j)
                 histo_list = np.transpose(train_pred[arr,i])
                 # By the way, histo_list is an array
-                plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
-                        normed=True, histtype='step',label=self.labels_text[j])
+                if histo_list.size:
+                    plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
+                            normed=True, histtype='step',label=self.labels_text[j])
             plt.xlabel('{} node output'.format(self.labels_text[i]))
             plt.ylabel('Arbitrary units.')
             plt.title('{} node output on training set'.format(self.labels_text[i]))
@@ -1059,8 +1061,9 @@ class OneHotMLP:
             for j in range(val_pred.shape[1]):
                 arr = np.where(np.argmax(val_true, axis=1)==j)
                 histo_list = np.transpose(val_pred[arr, i])
-                plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
-                        normed=True, histtype='step',label=self.labels_text[j])
+                if histo_list.size:
+                    plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
+                            normed=True, histtype='step',label=self.labels_text[j])
             plt.xlabel('{} node output'.format(self.labels_text[i]))
             plt.ylabel('Arbitrary units.')
             plt.title('{} node output on validation set'.format(self.labels_text[i]))
@@ -1073,9 +1076,9 @@ class OneHotMLP:
                 arr2 = (np.argmax(train_pred, axis=1)==i)
                 arr = np.multiply(arr1, arr2)
                 histo_list = train_pred[arr,i]
-                
-                plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
-                        normed=True, histtype='step',label=self.labels_text[j])
+                if histo_list.size:
+                    plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
+                            normed=True, histtype='step',label=self.labels_text[j])
             plt.xlabel('{} node output'.format(self.labels_text[i]))
             plt.ylabel('Arbitrary units.')
             plt.title('output for predicted {} on the training set'.format(self.labels_text[i]))
@@ -1089,8 +1092,9 @@ class OneHotMLP:
                 arr2 = (np.argmax(val_pred, axis=1)==i)
                 arr = np.multiply(arr1, arr2)
                 histo_list = val_pred[arr,i]
-                plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
-                        normed=True, histtype='step',label=self.labels_text[j])
+                if histo_list.size:
+                    plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
+                            normed=True, histtype='step',label=self.labels_text[j])
             plt.xlabel('{} node output'.format(self.labels_text[i]))
             plt.ylabel('Arbitrary units.')
             plt.title('output for predicted {} on the validation set'.format(self.labels_text[i]))
@@ -1105,9 +1109,10 @@ class OneHotMLP:
             for j in range(train_pred.shape[1]):
                 arr = np.where(np.argmax(train_true, axis=1)==j)
                 histo_list = np.transpose(train_pred[arr,i])
-                plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
-                        normed=True, histtype='step',label=self.labels_text[j],
-                        log=True)
+                if histo_list.size:
+                    plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
+                            normed=True, histtype='step',label=self.labels_text[j],
+                            log=True)
             plt.xlabel('{} node output'.format(self.labels_text[i]))
             plt.ylabel('Arbitrary units.')
             plt.title('{} node output on training set'.format(self.labels_text[i]))
@@ -1119,9 +1124,10 @@ class OneHotMLP:
             for j in range(val_pred.shape[1]):
                 arr = np.where(np.argmax(val_true, axis=1)==j)
                 histo_list = np.transpose(val_pred[arr,i])
-                plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
-                        normed=True, histtype='step',label=self.labels_text[j],
-                        log=True)
+                if histo_list.size:
+                    plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
+                            normed=True, histtype='step',label=self.labels_text[j],
+                            log=True)
             plt.xlabel('{} node output'.format(self.labels_text[i]))
             plt.ylabel('Arbitrary units.')
             plt.title('{} node output on validation set'.format(self.labels_text[i]))
@@ -1135,9 +1141,10 @@ class OneHotMLP:
                 arr2 = (np.argmax(train_pred, axis=1)==i)
                 arr = np.multiply(arr1, arr2)
                 histo_list = train_pred[arr,i]
-                plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
-                        normed=True, histtype='step',label=self.labels_text[j],
-                        log=True)
+                if histo_list.size:
+                    plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
+                            normed=True, histtype='step',label=self.labels_text[j],
+                            log=True)
             plt.xlabel('{} node output'.format(self.labels_text[i]))
             plt.ylabel('Arbitrary units.')
             plt.title('output for predicted {} on the training set'.format(self.labels_text[i]))
@@ -1151,9 +1158,10 @@ class OneHotMLP:
                 arr2 = (np.argmax(val_pred, axis=1)==i)
                 arr = np.multiply(arr1, arr2)
                 histo_list = val_pred[arr,i]
-                plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
-                        normed=True, histtype='step',label=self.labels_text[j],
-                        log=True)
+                if histo_list.size:
+                    plt.hist(histo_list, bins, alpha=1.0, color=hist_colors[j], 
+                            normed=True, histtype='step',label=self.labels_text[j],
+                            log=True)
             plt.xlabel('{} node output'.format(self.labels_text[i]))
             plt.ylabel('Arbitrary units.')
             plt.title('output for predicted {} on the validation set'.format(self.labels_text[i]))
