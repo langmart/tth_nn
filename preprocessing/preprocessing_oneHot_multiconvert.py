@@ -150,7 +150,7 @@ class GetBranches:
                 for i in self.categories:
                     categories_name += '_'+i
                 print('Found categories: {}. '.format(self.categories))
-                for weights_to_choose in range(5):
+                for weights_to_choose in range(6):
                     print('Getting categories and labels, ')
                     sign = self._get_categories_and_labels(sig, structured_sig,
                             n_sig_events, 'sig', n_sig_events, n_sig_events,
@@ -299,6 +299,8 @@ class GetBranches:
                 elif (weights_to_choose == 4):
                     keep_dict['weights'].append([1.0 / n_sig_events *
                             self.sigma_sig])
+                elif (weights_to_choose == 5):
+                    keep_dict['weights'].append([1.0 / n_sig_events])
                 siglab = self._signal_label(label_length)
                 keep_dict['labels'].append(siglab)
             print('    Signal data: {}'.format(len(keep_dict['labels'])))
@@ -331,6 +333,8 @@ class GetBranches:
                         elif (weights_to_choose == 4): 
                             keep_dict['weights'].append([1.0 / bg_total *
                                     self.sigma_bg])
+                        elif (weights_to_choose == 5):
+                            keep_dict['weights'].append([1.0 / bg_total])
                         bglab = self._bg_label(category, label_length)
                         keep_dict['labels'].append(bglab)
                         count_dict[category] += 1
@@ -392,7 +396,7 @@ class GetBranches:
         weight_names = ['Weight_XS']
         weights, _ = self._get_branches(structured_array, weight_names)
         weights = np.prod(weights, axis=1).reshape(-1,1)
-        weights /+ np.sum(weights)
+        # weights /= np.sum(weights)
 
         # i = np.random.randint(0,1000)
         # with open(self.save_path + '/weights_{}.txt'.format(i), 'w') as f:
