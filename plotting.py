@@ -270,18 +270,19 @@ out_path = 'data/studies/batch_size/9to14/'
 plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel,
         legend_title)
 
-# # dropout values
-# a_path = 'data/executed/analyses/keep-prob/'
-# paths_1 = ['keep-prob_1', 'keep-prob_2', 'keep-prob_3', 'keep-prob_4',
-#         'keep-prob_5', 'keep-prob_6', 'keep-prob_7', 'keep-prob_8']
-# labels = ['d=0.3', 'd=0.35', 'd=0.4', 'd=0.45', 'd=0.5', 'd=0.55', 'd=0.6',
-#         'd=0.65']
-# title = 'Validation accuracy'
-# legend_title = 'Dropout value'
-# paths = [a_path + i for i in paths_1]
-# out_path = 'data/studies/dropout-value/1to8/'
-# plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel,
-#         legend_title)
+# dropout values
+a_path = 'data/executed/analyses/keep-prob/'
+paths_1 = ['dropout_2', 'dropout_3', 'dropout_4', 'dropout_5',
+        'dropout_6', 'dropout_7', 'dropout_8', 'dropout_9', 'dropout_10',
+        'dropout_11', 'dropout_12']
+labels = ['d=0.5', 'd=0.55', 'd=0.6', 'd=0.65', 'd=0.7', 'd=0.75',
+        'd=0.8', 'd=0.85', 'd=0.9', 'd=0.95', 'd=1.0']
+title = 'Validation accuracy'
+legend_title = 'Dropout value'
+paths = [a_path + i for i in paths_1]
+out_path = 'data/studies/dropout-value/2to12/'
+plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel,
+        legend_title)
 # paths_1 = ['keep-prob_9', 'keep-prob_10', 'keep-prob_11', 'keep-prob_12',
 #         'keep-prob_13', 'keep-prob_14', 'keep-prob_15']
 # labels = ['d=0.7', 'd=0.75', 'd=0.8', 'd=0.85', 'd=0.9', 'd=0.95', 'd=1.0']
@@ -292,6 +293,35 @@ plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel,
 # plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel,
 #         legend_title)
 # 
+# l2 regularization parameters
+a_path = 'data/executed/analyses/beta/'
+paths_1 = ['beta_1', 'beta_2', 'beta_3', 'beta_4', 'beta_5', 'beta_6', 'beta_7',
+        'beta_8', 'beta_9', 'beta_10', 'beta_11', 'beta_12', 'beta_13',
+        'beta_14', 'beta_15', 'beta_16', 'beta_17', 'beta_18']
+labels = paths_1
+# labels = ['$\beta = 3\cdot 10^{-6}$', '$\beta = 10^{-6}$', 
+#         '$\beta = 3\cdot 10^{-7}$', '$\beta = 10^{-7}$', 
+#         '$\beta = 3\cdot 10^{-8}$', '$\beta = 10^{-8}$', 
+#         '$\beta = 3\cdot 10^{-9}$', '$\beta = 10^{-9}$', 
+#         '$\beta = 3\cdot 10^{-10}$', '$\beta = 10^{-10}$',
+#         '$\beta = 3\cdot 10^{-11}$', '$\beta = 10^{-5}$', 
+#         '$\beta = 3\cdot 10^{-5}$', '$\beta = 10^{-4}$',
+#         '$\beta = 3\cdot 10^{-4}$', '$\beta = 10^{-3}$',
+#         '$\beta = 3\cdot 10^{-3}$', '$\beta = 10^{-2}$']
+title = 'Validation accuracy'
+legend_title = 'L2 regularization'
+paths = [a_path + i for i in paths_1]
+out_path = 'data/studies/beta/all/'
+plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel,
+        legend_title)
+paths_1 = ['beta_18', 'beta_16', 'beta_14', 'beta_2', 'beta_6', 'beta_10']
+paths = [a_path + i for i in paths_1]
+labels = ['$\\beta = 10^{-2}$', '$\\beta = 10^{-3}$', '$\\beta=10^{-4}$',
+            '$\\beta = 10^{-6}$', '$\\beta = 10^{-8}$', '$\\beta = 10^{-10}$']
+out_path = 'data/studies/beta/for_thesis/'
+plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel,
+        legend_title)
+
 # # l2 regularization parameters
 # a_path = 'data/executed/analysis/l2_values'
 # paths_1 = ['l2_1', 'l2_2', 'l2_3', 'l2_4', 'l2_5', 'l2_6', 'l2_7']
@@ -318,33 +348,33 @@ plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel,
 
 
 ttH_plotter = ttHComparePlotter()
-ttH_path = 'data/executed/analyses_ttH/'
-ttH_subpath = 'cross_checks/'
-paths_1 = ['ttH_adadelta', 'ttH_adagrad', 'ttH_adam', 'ttH_graddescent',
-        'ttH_momentum']
-paths = [ttH_path + i for i in paths_1]
-title = 'ttH purity $\cdot$ significance'
-labels = ['Adadelta', 'Adagrad', 'Adam', 'Gradient descent', 'Momentum']
-out_path = 'data/studies_ttH/optimizers/'
-ttH_plotter.plot(paths, ttH_subpath, title, labels, [30,40], out_path)
-
-paths_1 = ['ttH_1', 'ttH_2', 'ttH_3', 'ttH_4', 'ttH_5', 'ttH_6', 'ttH_7',
-        'ttH_8', 'ttH_9', 'ttH_10', 'ttH_11']
-paths = [ttH_path + i for i in paths_1]
-title = 'ttH purity $\cdot$ significance'
-labels = paths_1
-out_path = 'data/studies_ttH/penalty'
-ttH_plotter.plot(paths, ttH_subpath, title, labels, [30,40], out_path)
-
-a_path = ttH_path + 'penalty/'
-paths_1 = ['penalty_1', 'penalty_2', 'penalty_3', 'penalty_4', 'penalty_5',
-        'penalty_6', 'penalty_7', 'penalty_8', 'penalty_9', 'penalty_10',
-        'penalty_11', 'penalty_12']
-paths = [a_path + i for i in paths_1]
-title = 'ttH purity $\cdot$ significance'
-labels = ['$\kappa=1.0$', '$\kappa=0.8$', '$\kappa=0.6$', '$\kappa=0.5$',
-        '$\kappa=0.4$', '$\kappa=0.3$', '$\kappa=0.2$', '$\kappa=0.1$',
-        '$\kappa=0.08$', '$\kappa=0.06$', '$\kappa=0.05$', '$\kappa=0.04$']
-out_path = 'data/studies_ttH/penalty_2'
-ttH_plotter.plot(paths, ttH_subpath, title, labels, [30,40], out_path)
+# ttH_path = 'data/executed/analyses_ttH/'
+# ttH_subpath = 'cross_checks/'
+# paths_1 = ['ttH_adadelta', 'ttH_adagrad', 'ttH_adam', 'ttH_graddescent',
+#         'ttH_momentum']
+# paths = [ttH_path + i for i in paths_1]
+# title = 'ttH purity $\cdot$ significance'
+# labels = ['Adadelta', 'Adagrad', 'Adam', 'Gradient descent', 'Momentum']
+# out_path = 'data/studies_ttH/optimizers/'
+# ttH_plotter.plot(paths, ttH_subpath, title, labels, [30,40], out_path)
+# 
+# paths_1 = ['ttH_1', 'ttH_2', 'ttH_3', 'ttH_4', 'ttH_5', 'ttH_6', 'ttH_7',
+#         'ttH_8', 'ttH_9', 'ttH_10', 'ttH_11']
+# paths = [ttH_path + i for i in paths_1]
+# title = 'ttH purity $\cdot$ significance'
+# labels = paths_1
+# out_path = 'data/studies_ttH/penalty'
+# ttH_plotter.plot(paths, ttH_subpath, title, labels, [30,40], out_path)
+# 
+# a_path = ttH_path + 'penalty/'
+# paths_1 = ['penalty_1', 'penalty_2', 'penalty_3', 'penalty_4', 'penalty_5',
+#         'penalty_6', 'penalty_7', 'penalty_8', 'penalty_9', 'penalty_10',
+#         'penalty_11', 'penalty_12']
+# paths = [a_path + i for i in paths_1]
+# title = 'ttH purity $\cdot$ significance'
+# labels = ['$\kappa=1.0$', '$\kappa=0.8$', '$\kappa=0.6$', '$\kappa=0.5$',
+#         '$\kappa=0.4$', '$\kappa=0.3$', '$\kappa=0.2$', '$\kappa=0.1$',
+#         '$\kappa=0.08$', '$\kappa=0.06$', '$\kappa=0.05$', '$\kappa=0.04$']
+# out_path = 'data/studies_ttH/penalty_2'
+# ttH_plotter.plot(paths, ttH_subpath, title, labels, [30,40], out_path)
 
