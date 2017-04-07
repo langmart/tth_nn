@@ -273,7 +273,7 @@ class OneHotMLP:
             val_cats = []
             train_data.normalize()
             val_data.normalize()
-            early_stopping = {'val_acc': 0.0, 'epoch': 0}
+            early_stopping = {'val_acc': -1.0, 'epoch': 0}
 
             print(110*'-')
             print('Train model: {}'.format(self.model_loc))
