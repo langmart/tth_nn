@@ -9,15 +9,16 @@ def stats(arr):
     stddev = np.std(arr)
     return mean, stddev
 
-path1 = '../data/executed/analyses_ttH/momentum_settings/'
-paths2 = ['man_9', 'man_8', 'man_7', 'man_6', 'man_5', 'man_4', 'man_3', 'man_2', 'momentum', 'man_1']
+path1 = '../data/executed/analyses_ttH/betattH/'
+paths2 = ['beta_ttH_1', 'beta_ttH_2', 'man_7', 'beta_ttH_3', 'beta_ttH_4',
+        'beta_ttH_5']
 apps = ['', '_2', '_3', '_4', '_5']
 paths_n = [path1 + i for i in paths2]
 #labels = [r'$\mu = 0.5$', r'$\mu = 0.55$',
 #        r'$\mu = 0.6$', r'$\mu = 0.65$', r'$\mu = 0.7$', r'$\mu = 0.75$', 
 #        r'$\mu = 0.8$', r'$\mu = 0.85$', r'$\mu = 0.9$', r'$\mu = 0.95$']
-labels = ['0.5', '0.55', '0.6', '0.65', '0.7', '0.75', '0.8', '0.85', '0.9',
-        '0.95']
+labels = [r'$10^{-4}$', r'$2.5\cdot 10^{-4}$', r'$5\cdot 10^{-4}$',
+        r'$10^{-3}$', r'$2.5\cdot 10^{-3}$', r'$5\cdot 10^{-3}$']
 linewidth=3
 # paths = [i+j for i in paths_n for j in apps]
 
@@ -103,8 +104,8 @@ ax.yaxis.grid(True)
 plt.xlim(-0.5, len(paths2)-0.5)
 plt.title(r'Product of purity and significance')
 plt.ylabel(r'Product')
-plt.xlabel(r'Friction parameter $\gamma$')
-plt.savefig('../data/studies_ttH/momentum_options/all_with_stddev.pdf')
+plt.xlabel('$\\beta$' + r'$_{\mathrm{t\bar{t}H}}$')
+plt.savefig('../data/studies_ttH/betattH/all_with_stddev.pdf')
 plt.clf()
 xvalues = np.arange(0, len(paths2), 1)
 xvalues_s = xvalues + 0.1
@@ -115,9 +116,9 @@ xvalues_s = xvalues + 0.1
 #         linestyle="None", elinewidth=linewidth, color='navy')
 # for cap in caps:
 #     cap.set_markeredgewidth(linewidth)
-# (_, caps2, _) = plt.errorbar(xvalues, times_means_list, yerr=times_stddevs_list,
-#         linestyle="None", elinewidth=linewidth, color='darkorange')
-# for cap in caps2:
+# ax = plt.gca()
+# ax.xaxis.grid(False)
+# ax.yaxis.grid(True)
 #     cap.set_markeredgewidth(linewidth)
 # ax = plt.gca()
 # ax.xaxis.grid(False)
@@ -152,11 +153,11 @@ ax1.xaxis.grid(False)
 ax1.yaxis.grid(True, color='navy', linewidth=linewidth/2.0)
 ax2.xaxis.grid(False)
 ax2.yaxis.grid(True, color='darkorange', linewidth=linewidth/2.0)
-ax1.set_xlabel(r'Friction parameter $\gamma$')
+ax1.set_xlabel('$\\beta$' + r'$_{\mathrm{t\bar{t}H}}$')
 fig.legend((errplot1, errplot2), (r'Training epochs', r'Training time'), 
         loc='upper right', numpoints=1)
 plt.xlim(-0.5, len(paths2)-0.5)
 plt.title(r'Number of training epochs')
-plt.savefig('../data/studies_ttH/momentum_options/num_of_epochs.pdf')
+# plt.ylabel(r'Training epochs')
+plt.savefig('../data/studies_ttH/betattH/num_of_epochs.pdf')
 plt.clf()
-
