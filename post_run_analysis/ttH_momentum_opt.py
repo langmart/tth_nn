@@ -108,26 +108,6 @@ plt.savefig('../data/studies_ttH/momentum_options/all_with_stddev.pdf')
 plt.clf()
 xvalues = np.arange(0, len(paths2), 1)
 xvalues_s = xvalues + 0.1
-# print(xvalues)
-# plt.xticks(xvalues, labels)
-# plt.plot(xvalues, means_list, 'ro')
-# (_, caps, _) = plt.errorbar(xvalues, ttimes_means_list, yerr=ttimes_stddevs_list,
-#         linestyle="None", elinewidth=linewidth, color='navy')
-# for cap in caps:
-#     cap.set_markeredgewidth(linewidth)
-# (_, caps2, _) = plt.errorbar(xvalues, times_means_list, yerr=times_stddevs_list,
-#         linestyle="None", elinewidth=linewidth, color='darkorange')
-# for cap in caps2:
-#     cap.set_markeredgewidth(linewidth)
-# ax = plt.gca()
-# ax.xaxis.grid(False)
-# ax.yaxis.grid(True)
-# plt.xlim(-0.5, len(paths2)-0.5)
-# plt.title(r'Number of training epochs')
-# plt.ylabel(r'Training epochs')
-# plt.xlabel(r'Friction parameter $\gamma$')
-# plt.savefig('../data/studies_ttH/momentum_options/num_of_epochs.pdf')
-# plt.clf()
 fig = plt.figure()
 ax1 = fig.add_subplot(111)
 errplot1 = ax1.errorbar(xvalues, ttimes_means_list, yerr=ttimes_stddevs_list,
