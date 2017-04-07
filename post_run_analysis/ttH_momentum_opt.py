@@ -80,10 +80,13 @@ for i in range(len(paths2)):
     ttimes_stddevs_list.append(ttimes_stddevs[paths2[i]])
     times_means_list.append(times_means[paths2[i]])
     times_stddevs_list.append(times_stddevs[paths2[i]])
+print('Product means: ')
 print(means_list)
 print(stddevs_list)
+print('Epoch numbers:')
 print(ttimes_means_list)
 print(ttimes_stddevs_list)
+print('Epoch times')
 print(times_means_list)
 print(times_stddevs_list)
 

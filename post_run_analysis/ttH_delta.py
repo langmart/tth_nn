@@ -10,9 +10,9 @@ def stats(arr):
     return mean, stddev
 
 path1 = '../data/executed/analyses_ttH/delta/'
-paths2 = ['delta_0', 'delta_1', 'delta_2', 'beta_ttH_4', 'delta_3', 'delta_4',
+paths2 = ['delta_0', 'delta_1', 'delta_2', 'man_7', 'delta_3', 'delta_4',
         'delta_5']
-apps = ['', '_2', '_3', '_4', '_5']
+apps = ['', '_1', '_2', '_3', '_4']
 paths_n = [path1 + i for i in paths2]
 #labels = [r'$\mu = 0.5$', r'$\mu = 0.55$',
 #        r'$\mu = 0.6$', r'$\mu = 0.65$', r'$\mu = 0.7$', r'$\mu = 0.75$', 
@@ -34,23 +34,31 @@ for path in paths2:
     ttimes[path] = []
     times[path] = []
     for j in range(len(apps)):
-        with open(path1 + path + apps[j] + '/info.txt', 'r') as f:
-            for line in f:
-                if "validation purity" in line:
-                    number = float(line.rsplit(' ')[3].strip('\n'))
-                    purity[path].append(number)
-                if "validation significance" in line:
-                    number = float(line.rsplit(' ')[3].strip('\n'))
-                    significance[path].append(number)
-                if "Number of epochs" in line:
-                    number = int(line.rsplit(' ')[4].strip('\n'))
-                    ttimes[path].append(number)
-                if "Training Time" in line:
-                    number = float(line.rsplit(' ')[2].strip('\n'))
-                    times[path].append(number)
+        try:
+            with open(path1 + path + apps[j] + '/info.txt', 'r') as f:
+                for line in f:
+                    if "validation purity" in line:
+                        number = float(line.rsplit(' ')[3].strip('\n'))
+                        purity[path].append(number)
+                    if "validation significance" in line:
+                        number = float(line.rsplit(' ')[3].strip('\n'))
+                        significance[path].append(number)
+                    if "Number of epochs" in line:
+                        number = int(line.rsplit(' ')[4].strip('\n'))
+                        ttimes[path].append(number)
+                    if "Training Time" in line:
+                        number = float(line.rsplit(' ')[2].strip('\n'))
+                        times[path].append(number)
+        except FileNotFoundError:
+            print("File not found: {}".format(path + apps[j]))
+            continue
 products = dict()
 means = dict()
 stddevs = dict()
+means_p = dict()
+stddevs_p = dict()
+means_s = dict()
+stddevs_s = dict()
 ttimes_means = dict()
 ttimes_stddevs = dict()
 times_means = dict()
@@ -60,15 +68,23 @@ for path in paths2:
     for j in range(len(purity[path])):
         products[path].append(purity[path][j] * significance[path][j])
     # print(products[path])
+    purity[path] = np.asarray(purity[path])
+    significance[path] = np.asarray(significance[path])
     products[path] = np.asarray(products[path])
     ttimes[path] = np.asarray(ttimes[path])
     times_path = np.asarray(times[path])
+    means_p[path], stddevs_p[path] = stats(purity[path])
+    means_s[path], stddevs_s[path] = stats(significance[path])
     means[path], stddevs[path] = stats(products[path])
     ttimes_means[path], ttimes_stddevs[path] = stats(ttimes[path])
     times_means[path], times_stddevs[path] = stats(times[path])
 
 means_list = []
 stddevs_list = []
+means_p_list = []
+stddevs_p_list = []
+means_s_list = []
+stddevs_s_list = []
 ttimes_means_list = []
 ttimes_stddevs_list = []
 times_means_list = []
@@ -76,14 +92,21 @@ times_stddevs_list = []
 for i in range(len(paths2)):
     means_list.append(means[paths2[i]])
     stddevs_list.append(stddevs[paths2[i]])
+    means_p_list.append(means_p[paths2[i]])
+    stddevs_p_list.append(stddevs_p[paths2[i]])
+    means_s_list.append(means_s[paths2[i]])
+    stddevs_s_list.append(stddevs_s[paths2[i]])
     ttimes_means_list.append(ttimes_means[paths2[i]])
     ttimes_stddevs_list.append(ttimes_stddevs[paths2[i]])
     times_means_list.append(times_means[paths2[i]])
     times_stddevs_list.append(times_stddevs[paths2[i]])
+print('Product means: ')
 print(means_list)
 print(stddevs_list)
+print('Epoch numbers:')
 print(ttimes_means_list)
 print(ttimes_stddevs_list)
+print('Epoch times')
 print(times_means_list)
 print(times_stddevs_list)
 
@@ -160,3 +183,31 @@ plt.title(r'Number of training epochs')
 plt.savefig('../data/studies_ttH/delta/num_of_epochs.pdf')
 plt.clf()
 
+plt.xticks(xvalues, labels)
+(_, caps, _) = plt.errorbar(xvalues, means_p_list, yerr=stddevs_p_list,
+        linestyle="None", elinewidth=linewidth, color='navy')
+for cap in caps:
+    cap.set_markeredgewidth(linewidth)
+ax = plt.gca()
+ax.xaxis.grid(False)
+ax.yaxis.grid(True)
+plt.xlim(-0.5, len(paths2)-0.5)
+plt.title(r'Purity in the $\mathrm{t}\bar{\mathrm{t}}\mathrm{H}$ channel')
+plt.ylabel(r'Purity')
+plt.xlabel(r'Difference parameter $\delta$')
+plt.savefig('../data/studies_ttH/delta/purity.pdf')
+plt.clf()
+plt.xticks(xvalues, labels)
+(_, caps, _) = plt.errorbar(xvalues, means_s_list, yerr=stddevs_s_list,
+        linestyle="None", elinewidth=linewidth, color='navy')
+for cap in caps:
+    cap.set_markeredgewidth(linewidth)
+ax = plt.gca()
+ax.xaxis.grid(False)
+ax.yaxis.grid(True)
+plt.xlim(-0.5, len(paths2)-0.5)
+plt.title(r'Significance in the $\mathrm{t}\bar{\mathrm{t}}\mathrm{H}$ channel')
+plt.ylabel(r'Significance')
+plt.xlabel(r'Difference parameter $\delta$')
+plt.savefig('../data/studies_ttH/delta/significance.pdf')
+plt.clf()
