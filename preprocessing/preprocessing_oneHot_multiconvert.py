@@ -235,6 +235,7 @@ class GetBranches:
         new_branches = []
 
         for branch in branches:
+            print('        {}'.format(branch))
             if branch in jets:
                 # only keep the first four entries of the jet vector
                 array = [jet[:4] for jet in structured_array[branch]]

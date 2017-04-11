@@ -1,5 +1,6 @@
 train_*.py
 training/
+post_run_analysis/ttH_*
 batch_trainer_*
 get_branches/
 get_branches
