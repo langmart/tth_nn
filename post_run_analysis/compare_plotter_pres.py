@@ -63,12 +63,15 @@ class ComparePlotter:
             os.makedirs(self.out_path)
 
         data = self._get_arrays()
-        colormap = plt.cm.jet
-        plot_colors = [colormap(i) for i in np.linspace(0, 0.9, len(self.paths))]
+        plot_colors = ['navy', 'firebrick', 'darkorange', 'lightseagreen',
+                'darkgreen', 'purple']
+        #colormap = plt.cm.jet
+        #plot_colors = [colormap(i) for i in np.linspace(0, 0.9, len(self.paths))]
+        
         for i in range(len(data)):
             path = self.produce_paths[i]
             plt.plot(data[path], label=r'{}'.format(labels[i]), 
-                    color=plot_colors[i])
+                    color=plot_colors[i], linewidth=1.8)
         ax = plt.gca()
         plt.setp(ax.get_yticklabels(), fontsize=tickfontsize)
         plt.setp(ax.get_xticklabels(), fontsize=tickfontsize)
@@ -79,6 +82,7 @@ class ComparePlotter:
             plt.legend(loc='best')
         else:
             plt.legend(loc='best', title=legend_title)
+        plt.tight_layout()
         plt.savefig(self.out_path + '/out.pdf')
         plt.clf()
         self._write_out()

@@ -13,6 +13,9 @@ import os
 import time
 import pickle
 
+titlefontsize = 20
+labelfontsize = 18
+tickfontsize = 17
 class TVPlotter:
     """Plotter training and validation accuracy in one canvas."""
     
@@ -66,9 +69,12 @@ class TVPlotter:
             path = self.produce_paths[i]
             plt.plot(data[path], label=r'{}'.format(labels[i]), 
                     color=plot_colors[i])
-        plt.xlabel(r'Epoch')
-        plt.ylabel(self.ylabel)
-        plt.title(self.title)
+        ax = plt.gca()
+        plt.setp(ax.get_yticklabels(), fontsize=tickfontsize)
+        plt.setp(ax.get_xticklabels(), fontsize=tickfontsize)
+        plt.xlabel(r'Epoch', fontsize=labelfontsize)
+        plt.ylabel(self.ylabel, fontsize=labelfontsize)
+        plt.title(self.title, fontsize=titlefontsize)
         plt.legend(loc='best')
         plt.savefig(self.out_path + '/out.pdf')
         plt.clf()

@@ -1,6 +1,6 @@
 import numpy as np
 import datetime
-from post_run_analysis.compare_plotter import ComparePlotter
+from post_run_analysis.compare_plotter_pres import ComparePlotter
 from post_run_analysis.tvplotter import TVPlotter
 from post_run_analysis.compare_plotter_ttH import ttHComparePlotter
 
@@ -15,7 +15,7 @@ paths_1 = ['adadelta', 'adagrad', 'adam', 'graddescent', 'momentum']
 paths = [a_path + i for i in paths_1]
 title = 'Validation accuracy for different optimizers'
 labels = ['Adadelta', 'Adagrad', 'Adam', 'Gradient Descent', 'Momentum']
-out_path = 'data/studies/optimizers'
+out_path = 'data/studies/optimizers_pres'
 plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
 
 a_path = 'data/executed/analyses/'
@@ -53,7 +53,7 @@ paths_1 = ['momentum', 'momentum_l2', 'momentum_dropout', 'momentum_l2_dropout']
 paths = [a_path + i for i in paths_1]
 title = 'Validation accuracy for different settings'
 labels = ['Momentum', 'Momentum + l2', 'Momentum + dropout', 'Momentum + l2 + dropout']
-out_path = 'data/studies/no_overfit/momentum'
+out_path = 'data/studies/no_overfit/momentum_pres'
 plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
 # 
 # paths_1 = ['adadelta', 'adadelta_l2', 'adadelta_dropout', 'adadelta_l2_dropout',
@@ -71,14 +71,14 @@ plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
 # out_path = 'data/studies/no_overfit/all'
 # plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
 
-# paths_1 = ['adadelta_l2_dropout', 'adagrad_l2_dropout', 'adam_l2_dropout',
-#     'graddescent_l2_dropout', 'momentum_l2_dropout']
-# paths = [a_path + i for i in paths_1]
-# title = 'Validation accuracy for different optimizers'
-# labels = ['Adadelta + l2 + dropout' , 'Adagrad + l2 + dropout', 'Adam + l2 + dropout', 
-#     'Gradient Descent + l2 + dropout', 'Momentum + l2 + dropout']
-# out_path = 'data/studies/no_overfit/l2_dropout'
-# plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
+paths_1 = ['adadelta_l2_dropout', 'adagrad_l2_dropout', 'adam_l2_dropout',
+    'graddescent_l2_dropout', 'momentum_l2_dropout']
+paths = [a_path + i for i in paths_1]
+title = 'Validation accuracy for different optimizers'
+labels = ['Adadelta + l2 + dropout' , 'Adagrad + l2 + dropout', 'Adam + l2 + dropout', 
+    'Gradient Descent + l2 + dropout', 'Momentum + l2 + dropout']
+out_path = 'data/studies/no_overfit/l2_dropout_pres'
+plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
 
 # labels = paths_1 = ['adam_l2_dropout', 'adam_l2_dropout_2', 'adam_l2_dropout_3', 
 #         'adam_l2_dropout_4', 'adam_l2_dropout_5', 'adam_l2_dropout_6',
@@ -90,7 +90,7 @@ plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
 
 
 # # Optimizer + activation function
-# a_path = 'data/executed/analyses/opt_act/'
+a_path = 'data/executed/analyses/opt_act/'
 # paths_1 = ['adadelta_elu', 'adadelta_relu', 'adadelta_sigmoid',
 #         'adadelta_softplus', 'adadelta_tanh']
 # paths = [a_path + i for i in paths_1]
@@ -119,24 +119,24 @@ plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
 # labels = ['ELU', 'ReLU', 'Sigmoid', 'Softplus', 'Tanh']
 # out_path = 'data/studies/opt_act/graddescent'
 # plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
-# paths_1 = ['momentum_elu', 'momentum_relu', 'momentum_sigmoid',
-#         'momentum_softplus', 'momentum_tanh']
-# paths = [a_path + i for i in paths_1]
-# title = 'Validation accuracy for different activation functions'
-# labels = ['ELU', 'ReLU', 'Sigmoid', 'Softplus', 'Tanh']
-# out_path = 'data/studies/opt_act/momentum'
-# plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
+paths_1 = ['momentum_elu', 'momentum_relu', 'momentum_sigmoid',
+        'momentum_softplus', 'momentum_tanh']
+paths = [a_path + i for i in paths_1]
+title = 'Validation accuracy for different activation functions'
+labels = ['ELU', 'ReLU', 'Sigmoid', 'Softplus', 'Tanh']
+out_path = 'data/studies/opt_act/momentum_pres'
+plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
 # 
-# paths_1 = ['adadelta_relu', 'adagrad_elu', 'adam_elu',
-#         'graddescent_elu', 'momentum_elu']
-# # paths_1 = ['adadelta_elu', 'adadelta_relu', 'adagrad_elu', 'adam_elu',
-# #         'graddescent_elu', 'graddescent_relu', 'momentum_elu']
-# paths = [a_path + i for i in paths_1]
-# title = 'Validation accuracy'
-# labels = ['Adadelta + ReLU', 'Adagrad + ELU', 'Adam + ELU',
-#         'Gradient Descent + ELU', 'Momentum + ELU']
-# out_path = 'data/studies/opt_act/best'
-# plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
+paths_1 = ['adadelta_relu', 'adagrad_elu', 'adam_elu',
+        'graddescent_elu', 'momentum_elu']
+# paths_1 = ['adadelta_elu', 'adadelta_relu', 'adagrad_elu', 'adam_elu',
+#         'graddescent_elu', 'graddescent_relu', 'momentum_elu']
+paths = [a_path + i for i in paths_1]
+title = 'Validation accuracy'
+labels = ['Adadelta + ReLU', 'Adagrad + ELU', 'Adam + ELU',
+        'Gradient Descent + ELU', 'Momentum + ELU']
+out_path = 'data/studies/opt_act/best_pres'
+plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
 # 
 # a_path = 'data/executed/analyses/lrate/'
 # paths_1 = ['lrate_2', 'lrate_3', 'lrate_4', 'lrate_5', 'lrate_6',
@@ -235,20 +235,20 @@ tv_plotter.plot(a_path, subpaths, title, labels, [30,40], out_path, ylabel)
 # out_path = 'data/studies/architecture/inhomogeneous/'
 # plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
 # 
-# a_path = 'data/executed/training/architecture/'
-# paths_1 = ['1x200', '2x200', '3x200', '4x200', '5x200', '6x200']
-# labels = paths_1
-# title = 'Validation accuracy'
-# paths = [a_path + 'train_' + i for i in paths_1]
-# out_path = 'data/studies/architecture/x200/'
-# plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
+a_path = 'data/executed/training/architecture/'
+paths_1 = ['1x200', '2x200', '3x200', '4x200', '5x200', '6x200']
+labels = paths_1
+title = 'Validation accuracy'
+paths = [a_path + 'train_' + i for i in paths_1]
+out_path = 'data/studies/architecture/x200_pres/'
+plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
 # 
-# paths_1 = ['5x20', '5x50', '5x100', '5x200']
-# labels = paths_1
-# title = 'Validation accuracy'
-# paths = [a_path + 'train_' + i for i in paths_1]
-# out_path = 'data/studies/architecture/5x/'
-# plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
+paths_1 = ['5x20', '5x50', '5x100', '5x200']
+labels = paths_1
+title = 'Validation accuracy'
+paths = [a_path + 'train_' + i for i in paths_1]
+out_path = 'data/studies/architecture/5x_pres/'
+plotter.plot(paths, subpath, title, labels, [30,40], out_path, ylabel)
 # 
 # 
 # # batch sizes
