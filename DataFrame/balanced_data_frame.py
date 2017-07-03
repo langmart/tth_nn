@@ -22,7 +22,7 @@ class DataFrame:
         self.normalization = normalization
         self.y = array[:, :self.out_size]
         self.x = array[:, self.out_size:-1]
-        self.w = array[:, -1:]
+        self.w = array[:, -1]
         self.sizes = sizes
         self.n = self.x.shape[0]
         self.nfeatures = self.x.shape[1]
@@ -150,8 +150,8 @@ class DataFrame:
                 print('Some data does not have the right shape.')
             if (self.y[i].shape[0] != self.out_size):
                 print('Some labels do not have the right shape.')
-            if (self.w[i].shape[0] != 1):
-                print('Some weights do not have the right shape.')
+            # if (self.w[i].shape[0] != 1):
+            #     print('Some weights do not have the right shape.')
         
         self.next_id = 0
         self.created_x, self.created_y, self.created_w = self._create_array()

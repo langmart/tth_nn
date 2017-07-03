@@ -23,7 +23,7 @@ class DataFrame:
         self.size = size
         self.y = array[:, :self.out_size]
         self.x = array[:, self.out_size:-1]
-        self.w = array[:, -1:]
+        self.w = array[:, -1]
         if (self.size == -1):
             self.size = self.x.shape[0]
         self.produced = self.size
@@ -74,8 +74,8 @@ class DataFrame:
                 print('Some data does not have the right shape.')
             if (self.y[i].shape[0] != self.out_size):
                 print('Some labels do not have the right shape.')
-            if (self.w[i].shape[0] != 1):
-                print('Some weights do not have the right shape.')
+            # if (self.w[i].shape[0] != 1):
+            #     print('Some weights do not have the right shape.')
         self.created_x = self.x[:self.size]
         self.created_y = self.y[:self.size]
         self.created_w = self.w[:self.size]

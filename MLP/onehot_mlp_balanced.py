@@ -232,7 +232,7 @@ class OneHotMLP:
         with train_graph.as_default():
             x = tf.placeholder(tf.float32, [None, self.n_features])
             y = tf.placeholder(tf.float32, [None, out_size])
-            w = tf.placeholder(tf.float32, [None, 1])
+            w = tf.placeholder(tf.float32, [None])
 
             weights, biases = self._get_parameters()
 
